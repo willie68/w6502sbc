@@ -1,0 +1,25 @@
+Name     Test2 ;
+PartNo   00 ;
+Date     30.06.2022 ;
+Revision 01 ;
+Designer wkla ;
+Company  mcs ;
+Assembly None ;
+Location  ;
+Device   virtual ;
+
+/* *************** INPUT PINS *********************/
+PIN 1  =  A15                        ; /*                                 */ 
+PIN 2  =  A14                       ; /*                                 */ 
+PIN 3  =  A13                       ; /*                                 */ 
+PIN 4  =  A12                       ; /*                                 */ 
+
+/* *************** OUTPUT PINS *********************/
+PIN 14   =  !csram                       ; /*                                 */ 
+PIN 15   =  !csrom                       ; /*                                 */ 
+
+FIELD address = [A15..0];
+
+csram = address:[0000..7fff];
+csrom = address:[8000..ffff];
+ 

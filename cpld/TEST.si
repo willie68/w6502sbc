@@ -1,0 +1,44 @@
+Name     Test;
+PartNo   00;
+Date     30.06.2022;
+Revision 01;
+Designer Engineer;
+Company  nn;
+Assembly None;
+Location ;
+Device   G22V10;
+
+
+ORDER: clock, %2, mhz4, %2, mhz2, %2, %2, q0, %2, q1, %2, clk_out; 
+
+
+VECTORS:
+0 0 0  L L L
+1 0 0  H L H
+0 0 0  H L L
+1 0 0  L H H
+0 0 0  L H L
+1 0 0  H H H
+0 0 0  H H L
+1 0 0  L L H
+0 0 0  L L L
+
+0 1 0  L L L
+1 1 0  H L H
+0 1 0  H L H
+1 1 0  L H L
+0 1 0  L H L
+1 1 0  H H H
+0 1 0  H H H
+1 1 0  L L L
+0 1 0  L L L
+
+0 0 1  L L L
+1 0 1  H L L
+0 0 1  H L L
+1 0 1  L H H
+0 0 1  L H H
+1 0 1  H H H
+0 0 1  H H H
+1 0 1  L L L
+0 0 1  L L L
