@@ -15,7 +15,8 @@ Schon seit längerem beschäftigt mich ein altes Thema. Assembler und 6502. Mein
 - Steckkartensystem, bzw. Systembus, am liebsten mit Corner Edge Connectors, wie im C64, VC20, eine passende Backplane wäre nett
 - kein Video, Audio oder sowas
 - SPI über 6522, damit man mal ein Display/Keyboard anschließen kann
-- CPLD für
+- CPLD für irgendwas
+- opt. LC-Display
 
 Angefangen habe ich im Juli 22. Zunächst mit Bestellungen bei Mouser und Reichelt. 
 
