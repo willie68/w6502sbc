@@ -63,7 +63,7 @@ Zur Zeit stell ich mir die Aufteilung so vor:
 | Bereich | Hi Adress | Beschreibung |
 |-|-|-|
 | 0xFFFF<br />...<br />0xE000 | 111x xxxx | 8KB Kernel ROM, HiROM |
-| 0xDFFF<br /><br />0xD000    | 1101 xxxx | IO Bereich aufgeteilt in 16 Bereiche für die Peripherie.<br />0xD500: CS4<br />0xD400: CS3<br />0xD300: CS2<br />0xD200: CS1<br />0xD100: ASIC 1<br />0xD000: VIA 1<br /> |
+| 0xDFFF<br /><br />0xD000    | 1101 xxxx | IO Bereich aufgeteilt in 16 Bereiche für die Peripherie.<br />0xD500: CS5<br />0xD400: CS4<br />0xD300: CS3<br />0xD200: CS2<br />0xD100: ASIC 1<br />0xD000: VIA 1<br /> |
 | 0xCFFF<br />...<br />0xC000 | 1100 xxxx | 4k RAM (HiRAM, kennt man aus dem C64) |
 | 0xBFFF<br />...<br />0xA000 | 101x xxxx | 8KB Interpreter ROM, LoROM |
 | 0x9FFF<br />...<br />0x8000 | 100x xxxx | 8KB RAM (LoRAM) |
@@ -209,8 +209,8 @@ Werden alle 3 Bereiche (LoROM, HiRAM, LoRAM) genutzt, können 16KB zusammenhäng
 | 37     | ALoROMB  | 38     | LoROMB   |
 | 39     | AHiRAMB  | 40     | HiRAMB   |
 | 41     | ALoRAMB  | 42     | LoRAMB   |
-| 43     | CSB2     | 44     | CSB3     |
-| 45     | CSB4     | 46     | CSB5     |
+| 43     | CS2B     | 44     | CS3B     |
+| 45     | CS4B     | 46     | CS5B     |
 | 47     | n.n.     | 48     | n.n.     |
 | 49     | GND      | 50     | GND      |
 
