@@ -1,9 +1,11 @@
 # w6502sbc
 willies 6502 single board computer
+
 a 6502 sbc with the option to be used with a backplane as a module.
+
 I'm a bit sorry, but there are so many 6502 projects out there that I've taken the liberty of documenting this project (for the time being) only in German.
 
-Hier Dokumentiere ich den augenblicklichen Stand. Für die Historie gibt es den Blog. ([blog](/blog.md))
+Hier dokumentiere ich den aktuellen Stand. Für die Historie gibt es den Blog. ([blog](/blog.md))
 
 # Einleitung
 
