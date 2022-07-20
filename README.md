@@ -74,7 +74,7 @@ Zur Zeit stell ich mir die Aufteilung so vor:
 
 Der SBC soll später auf einer Backplane aufgesetzt werden können. Die Backplane übernimmt dann die Stromversorgung der verschiedenen Karten. Gerne hätte ich Edge Card Connectoren, wie sie auch im C64 Verwendung gefunden haben.  So braucht man für die Karten nur etwas Paltinenplatz und keinen eigenen Connector. 
 
-![sch_clock_reset](H:\privat\git-sourcen\w6502sbc\images\edge_card_connector.png)
+![sch_clock_reset](/images/edge_card_connector.png)
 
 ## Aber welche Signale müssen auf den Bus?
 
