@@ -1,5 +1,9 @@
 # w6502sbc
 willies 6502 single board computer
+a 6502 sbc with the option to be used with a backplane as a module.
+I'm a bit sorry, but there are so many 6502 projects out there that I've taken the liberty of documenting this project (for the time being) only in German.
+
+Hier Dokumentiere ich den augenblicklichen Stand. Für die Historie gibt es den Blog. ([./blog.md](Blog))
 
 # Einleitung
 
@@ -33,7 +37,7 @@ Am Ende des 1. Abschnittes soll dann eine CPU Steckkarte mit einem funktionieren
 
 Der 6502 kann einen Adressbereich von 64Kb ansprechen. Dabei müssen folgende Bedingungen gegeben sein:
 
-die beiden unteren Seiten (eine Seite sind immer 256 Bytes) sollten/müssen RAM sein. Die Zeropage (ZP) also der BEreich von 0x0000 -0x00FF hat eine besondere Bedeutung im 6502. Hier liegen "Register" die sehr schnell angesprochen werden können. Auch Bitmanipulation sind sehr einfach. 
+die beiden unteren Seiten (eine Seite sind immer 256 Bytes) sollten/müssen RAM sein. Die Zeropage (ZP) also der Bereich von 0x0000 -0x00FF hat eine besondere Bedeutung im 6502. Hier liegen "Register" die sehr schnell angesprochen werden können. Auch Bitmanipulation sind sehr einfach. 
 
 Evtl. macht es somit Sinn ähnlich wie im 6510 (C64) die beiden unteren Bytes mit einem digitalen Ein/Ausgang zu besetzen. Damit könnte man sehr schnelle Anbindungen schreiben. z.B. SPI oder Taktumschaltung, oder auch ROM Selektion (dazu später mehr).
 
@@ -65,3 +69,72 @@ Zur Zeit stell ich mir die Aufteilung so vor:
 | 0x01FF<br />...<br />0x0100 | 256 Bytes Stack |
 | 0x00FF<br />...<br />0x0002 | 254 Bytes ZP RAM |
 | 0x0001, 0x0000 | 16 Bit digitale Ein/Ausgabe |
+
+# Der Bus
+
+Der SBC soll später auf einer Backplane aufgesetzt werden können. Die Backplane übernimmt dann die Stromversorgung der verschiedenen Karten. Gerne hätte ich Edge Card Connectoren, wie sie auch im C64 Verwendung gefunden haben.  So braucht man für die Karten nur etwas Paltinenplatz und keinen eigenen Connector. 
+
+![sch_clock_reset](H:\privat\git-sourcen\w6502sbc\images\edge_card_connector.png)
+
+## Aber welche Signale müssen auf den Bus?
+
+Fangen wir mal mit dem Naheliegendsten an.
+
+**+5V** und **GND** müssen da auf jeden Fall drauf. Am besten mehrfach, damit die Strombelastung pro Kontakt nicht zu hoch wird.
+Dann der Adress- und der Datenbus. **A0..A15** und **D0..D7**.
+
+Nun kommen wir zu dem schwierigsten Teil. Den Steuerleitungen. Klar sind natürlich
+
+**IRQ, NMI, RESET, RW, PHI2, RDY**
+
+Weiterhin kommen von der Adressdekodierlogik:
+
+**CSIO2..6**, 4 zusätzliche ChipSelect Leitungen, die direkt aus dem Adressdekoder stammen, um weitere Peripherie anzuschließen. Jeder Adressbereich umfasst eine Page also 256 Adressen. (Wie auf der CPU Karte selber auch)
+
+Dann gibt es jeweils Tupel von Anforderungs- und ChipSelectleitungen
+
+**AHiROM, HiROM**: Mit der Anforderungsleitung AHiROM signalisiert die Karte, daß sie für den oberen Adressbereich (Die obersten 8K) ein eigenes ROM zur Verfügung stellt. (0xE000..0xFFFF)
+
+**ALoROM, LoROM**: das geliche gilt für das LoROM, also den Bereich der Shell, terminal, BASIC Interpreters.(0xA000..0xBFFF)
+
+**AHiRAM, HiRAM, ALoRAM, LoRAM**: hier nun für die HiRAM und LoRAM Bereiche. (HiRAM: 0xC000..0xCFFF, LoRAM: 0x8000..0x9FFF)
+
+Werden alle 3 Bereiche (LoROM, HiRAM, LoRAM) genutzt, können 16KB zusammenhängender Adressbereich benutzt werden. Mit dem HiROM stehen also 24KB zur Verfügung.
+
+| Pin    | Belegung | Pin    | Belegung |
+| ------ | -------- | ------ | -------- |
+| 1      | +5V      | 2      | +5V      |
+| 3      | GND      | 4      | GND      |
+| 5..11  | D0..D6   | 6..12  | D1..D7   |
+| 13     | A0       | 14     | A1       |
+| 15..25 | ...      | 16..26 | ...      |
+| 27     | A14      | 28     | A15      |
+| 29     | IRQB     | 30     | NMIB     |
+| 31     | RESETB   | 32     | PHI2     |
+| 33     | RW       | 34     | RDY      |
+| 35     | AHiROMB  | 36     | HiROMB   |
+| 37     | ALoROMB  | 38     | LoROMB   |
+| 39     | AHiRAMB  | 40     | HiRAMB   |
+| 41     | ALoRAMB  | 42     | LoRAMB   |
+| 43     | CSB2     | 44     | CSB3     |
+| 45     | CSB4     | 46     | CSB5     |
+| 47     | n.n.     | 48     | n.n.     |
+| 49     | GND      | 50     | GND      |
+
+## Aber wofür?
+
+### CS2..CS5
+
+Hier kann man per Karte eigene zus. Peripherie anbinden. So ist es damit schnell möglich eine zus. ASIC oder eine VIA ohne viel Aufwand dazu zu stecken.
+
+### HiROM, LoROM, HiRAM, LoRAM
+
+Naja das ist ein moving Target. Ich bin mir noch nicht sicher, ob ich die Signale brauche.
+
+Mit HiROM kann man ein eigenes Kernel einblenden. 
+
+Mit LoROM eine eigene Shell mit eigener Sprache. So kann man Karten mit BASIC, VTL-2, Basl oder ähnliches verwenden.
+
+LoRAM und HiRAM könnten für Grafikkarten Verwendung finden.
+Alles zusammen gibt einem 24KB ROM (8KB (0xD000...0xDFFF sind den IO geschuldet)
+
