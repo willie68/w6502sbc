@@ -56,12 +56,12 @@ Auch das ROM gibt es in verschiedenen Varianten. Ich habe mir sowohl ein klassis
 Zur Zeit stell ich mir die Aufteilung so vor:
 | | |
 |-|-|
-| 0xFFFF<br />...<br />0xE000 | 8KB Kernel ROM |
-| 0xDFFF<br /><br />0xD000    | IO Bereich aufgeteilt in 16 Bereiche für die Peripherie |
+| 0xFFFF<br />...<br />0xE000 | 8KB Kernel ROM, HiROM |
+| 0xDFFF<br /><br />0xD000    | IO Bereich aufgeteilt in 16 Bereiche für die Peripherie.<br />0xD500: CS4<br />0xD400: CS3<br />0xD300: CS2<br />0xD200: CS1<br />0xD100: ASIC 1<br />0xD000: VIA 1<br /> |
 | 0xCFFF<br />...<br />0xC000 | 4k RAM ( kennt man aus dem C64) |
-| 0xBFFF<br />...<br />0xA000 | 8KB Interpreter ROM |
+| 0xBFFF<br />...<br />0xA000 | 8KB Interpreter ROM, LoROM |
 | 0x9FFF<br />...<br />0x8000 | 4KB RAM |
-| 0x7FFF<br />...<br />0x0200 | 31469 Bytes RAM |
+| 0x7FFF<br />...<br />0x0200 | 31469 Bytes RAM (BaseRAM) |
 | 0x01FF<br />...<br />0x0100 | 256 Bytes Stack |
 | 0x00FF<br />...<br />0x0002 | 254 Bytes ZP RAM |
 | 0x0001, 0x0000 | 16 Bit digitale Ein/Ausgabe |
