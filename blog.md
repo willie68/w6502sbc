@@ -1,4 +1,4 @@
-# Blog die erste
+# Blog die erste (18.07.22)
 
 Schon seit längerem beschäftigt mich ein altes Thema. Assembler und 6502. Mein C64 ist schon länger eingemottet, der VC20 verkauft. Trotzdem finde ich den 6502 von der Assemblersprache her sehr interessant. Was man da mit 1MHz und 64kb RAM alles machen konnte. Dieses Jahr (2022) war es dann soweit. Ich habe mich dazu durchgerungen einen 6502 SBC zu bauen. Im Internet gibt es viele, viele Beiträge und Vorschläge dazu. Leider gibt es keine Version, die man einfach nachbauen könnte und meine Erwartungen an einen 6502 Workbench Rechner erfüllt. Hier mal kurz meine Anforderungen:
 
@@ -26,7 +26,7 @@ Folgende Schritte zum Lernen:
 
 Am Ende des 1. Abschnittes soll dann eine CPU Steckkarte mit einem funktionierenden 6502 System stehen. Inkl. BASIC über Terminal. Als weitere Sprachen wären noch VTL-2 und Basl (meine eigene kleine Sprache) angedacht.
 
-# Start the engine
+# Start the engine (19.07.22)
 
 Heute (19.07.22) kamen die letzten Teile. Jetzt kann ich loslegen. Also habe ich zunächst mit der Clocksection und dem Reset angefangen. Beides recht simple.
 
@@ -40,7 +40,7 @@ Schematic dazu
 
 
 
-# Busgedanken
+# Busgedanken (19.07.22)
 
 Wie schon im 1. Teil erwähnt, soll das Projekt später auf einer Backplane aufsetzen. Die Backplane übernimmt dann die Stromversorgung der verschiedenen Karten. Gerne hätte ich Edge Card Connectoren, wie sie auch im C64 Verwendung gefunden haben.  So braucht man für die Karten nur etwas Paltinenplatz und keinen eigenen Connector. 
 
@@ -111,3 +111,95 @@ Alles zusammen gibt einem 24KB ROM (8KB (0xD000...0xDFFF sind den IO geschuldet)
 
 
 Mal schauen wie sich das entwickelt. Bis Pin 34 steht die Aufteilung fest. Somit kann die Backplane schon mal entworfen werden, was für Signale dann da drauf kommen, ist erst mal egal.
+
+# Adressen (20.07.22)
+
+Heute hab ich mir mal ein paar Gedanken über die Adressierung gemacht. Eine erste Version der geplanten Speicheraufteilung steht ja schon in der [README.md](/readme.md) . Dazu muss aber auch ein PLD File für das CPLD geschrieben werden. Zunächst habe ich die verschiedenen Signal in einer Tabelle mal zusammengefasst.
+
+| **Bereich**    | **A15** | **A14** | **A13** | **A12** |      | **/AloRAM** | **/AhiRAM** | **/AloROM** | **/AhiROM** |      | **/CSRAM** | **/CSHiROM** | **/CSLoROM** | **/CSIO** | **/LoRAM** | **/LoROM** | **/HiRAM** | **/HiROM** |
+| -------------- | ------- | ------- | ------- | ------- | ---- | ----------- | ----------- | ----------- | ----------- | ---- | ---------- | ------------ | ------------ | --------- | ---------- | ---------- | ---------- | ---------- |
+| **Base RAM**   | 0       | x       | x       | x       |      | x           | x           | x           | x           |      | 0          | 1            | 1            | 1         | 1          | 1          | 1          | 1          |
+| **Lo RAM**     | 1       | 0       | 0       | x       |      | 1           | x           | x           | x           |      | 0          | 1            | 1            | 1         | 1          | 1          | 1          | 1          |
+| **Lo RAM ext** | 1       | 0       | 0       | x       |      | 0           | x           | x           | x           |      | 1          | 1            | 1            | 1         | 0          | 1          | 1          | 1          |
+| **Lo ROM**     | 1       | 0       | 1       | x       |      | x           | x           | 1           | x           |      | 1          | 1            | 0            | 1         | 1          | 1          | 1          | 1          |
+| **Lo ROM ext** | 1       | 0       | 1       | x       |      | x           | x           | 0           | x           |      | 1          | 1            | 1            | 1         | 1          | 0          | 1          | 1          |
+| **Hi RAM**     | 1       | 1       | 0       | 0       |      | x           | 1           | x           | x           |      | 0          | 1            | 1            | 1         | 1          | 1          | 1          | 1          |
+| **Hi RAM ext** | 1       | 1       | 0       | 0       |      | x           | 0           | x           | x           |      | 1          | 1            | 1            | 1         | 1          | 1          | 0          | 1          |
+| **IO**         | 1       | 1       | 0       | 1       |      | x           | x           | x           | x           |      | 1          | 1            | 1            | 0         | 1          | 1          | 1          | 1          |
+| **Hi ROM**     | 1       | 1       | 1       | x       |      | x           | x           | x           | 1           |      | 1          | 0            | 1            | 1         | 1          | 1          | 1          | 1          |
+| **Hi ROM ext** | 1       | 1       | 1       | x       |      | x           | x           | x           | 0           |      | 1          | 1            | 1            | 1         | 1          | 1          | 1          | 0          |
+
+Der IO Bereich wird mit einem 74138 noch einmal extra unterteilt und braucht somit nicht mit ins CPLD. Geplant ist auch nur ein kleines ATF16V8. Wie man hier sieht, habe ich 8 Eingänge und 8 Ausgänge. Für das RAM wird die notwendige Kombination mit dem PHI2 extern gemacht. Evtl. zieh ich das aber auch hier noch mit rein. Steht noch nicht fest.
+
+Herausgekommen sind die beiden folgenden Dateien: PLD
+
+```pld
+Name     W6502SBC_ADR ;
+PartNo   00 ;
+Date     20.07.2022 ;
+Revision 01 ;
+Designer wkla ;
+Company  nn ;
+Assembly None ;
+Location  ;
+Device   G16V8 ;
+
+/* *************** INPUT PINS *********************/
+PIN 1   =  A12; 
+PIN 2   =  A13;
+PIN 3   =  A14;
+PIN 4   =  A15;
+PIN 5 	=  ALORAM;
+PIN 6 	=  AHIRAM;
+PIN 7 	=  ALOROM;
+PIN 8 	=  AHIROM;
+
+/* *************** OUTPUT PINS *********************/
+PIN 12   =  CSRAM;
+PIN 13   =  CSHIROM;
+PIN 14   =  CSLOROM;
+PIN 15   =  CSIO;
+PIN 16   =  LORAM;
+PIN 17   =  LOROM;
+PIN 18   =  HIRAM;
+PIN 19   =  HIROM;
+
+CSRAM = (A15 & !A14 & !A13 & !ALORAM) # (A15 & !A14 & A13) # (A15 & A14 & !A13 & !A12 & !AHIRAM) # (A15 & A14 & !A13 & A12) # (A15 & A14 & A13) ;
+CSHIROM = !(A15 & A14 & A13 & AHIROM);
+CSLOROM = !(A15 & !A14 & A13 & ALOROM);
+CSIO= !(A15 & A14 & !A13 & A12);
+LORAM= !(A15 & !A14 & !A13 & !ALORAM);
+LOROM= !(A15 & !A14 & A13 & !ALOROM);
+HIRAM= !(A15 & A14 & !A13 & !A12 & !AHIRAM);
+HIROM= !(A15 & A14 & A13 & !AHIROM);
+```
+
+Und der Simulator dazu:
+
+```
+Name     W6502SBC_ADR ;
+PartNo   00 ;
+Date     20.07.2022 ;
+Revision 01 ;
+Designer wkla ;
+Company  nn ;
+Assembly None ;
+Location  ;
+Device   G16V8 ;
+
+ORDER: A15, A14, A13, A12, ALORAM, AHIRAM, ALOROM, AHIROM, CSRAM, CSHIROM, CSLOROM, CSIO, LORAM, LOROM, HIRAM, HIROM; 
+
+VECTORS:
+0 X X X X X X X L H H H H H H H 
+1 0 0 X 1 X X X L H H H H H H H 
+1 0 0 X 0 X X X H H H H L H H H 
+1 0 1 X X X 1 X H H L H H H H H 
+1 0 1 X X X 0 X H H H H H L H H 
+1 1 0 0 X 1 X X L H H H H H H H 
+1 1 0 0 X 0 X X H H H H H H L H 
+1 1 0 1 X X X X H H H L H H H H 
+1 1 1 X X X X 1 H L H H H H H H 
+1 1 1 X X X X 0 H H H H H H H L 
+```
+
+Wer einen Fehler findet mag ihn mir gerne mitteilen. 

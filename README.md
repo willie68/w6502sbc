@@ -60,17 +60,108 @@ Da ich gerne mit BASIC oder auch mit anderen Sprachen herumhantieren möchte, is
 Auch das ROM gibt es in verschiedenen Varianten. Ich habe mir sowohl ein klassisches EEPROM mit 8Kx8 besorgt, wie auch ein NOR Flash mit 128KBx8. Das 2. ist dafür gedacht ROM Bereiche umschaltbar zu machen. D.h. ein Bereich Flash kann sowohl im Kernel ROM eingeblendet werden, ein andere dann als Interpreter ROM.
 
 Zur Zeit stell ich mir die Aufteilung so vor:
-| | |
-|-|-|
-| 0xFFFF<br />...<br />0xE000 | 8KB Kernel ROM, HiROM |
-| 0xDFFF<br /><br />0xD000    | IO Bereich aufgeteilt in 16 Bereiche für die Peripherie.<br />0xD500: CS4<br />0xD400: CS3<br />0xD300: CS2<br />0xD200: CS1<br />0xD100: ASIC 1<br />0xD000: VIA 1<br /> |
-| 0xCFFF<br />...<br />0xC000 | 4k RAM ( kennt man aus dem C64) |
-| 0xBFFF<br />...<br />0xA000 | 8KB Interpreter ROM, LoROM |
-| 0x9FFF<br />...<br />0x8000 | 4KB RAM |
-| 0x7FFF<br />...<br />0x0200 | 31469 Bytes RAM (BaseRAM) |
-| 0x01FF<br />...<br />0x0100 | 256 Bytes Stack |
-| 0x00FF<br />...<br />0x0002 | 254 Bytes ZP RAM |
-| 0x0001, 0x0000 | 16 Bit digitale Ein/Ausgabe |
+| Bereich | Hi Adress | Beschreibung |
+|-|-|-|
+| 0xFFFF<br />...<br />0xE000 | 111x xxxx | 8KB Kernel ROM, HiROM |
+| 0xDFFF<br /><br />0xD000    | 1101 xxxx | IO Bereich aufgeteilt in 16 Bereiche für die Peripherie.<br />0xD500: CS4<br />0xD400: CS3<br />0xD300: CS2<br />0xD200: CS1<br />0xD100: ASIC 1<br />0xD000: VIA 1<br /> |
+| 0xCFFF<br />...<br />0xC000 | 1100 xxxx | 4k RAM (HiRAM, kennt man aus dem C64) |
+| 0xBFFF<br />...<br />0xA000 | 101x xxxx | 8KB Interpreter ROM, LoROM |
+| 0x9FFF<br />...<br />0x8000 | 100x xxxx | 8KB RAM (LoRAM) |
+| 0x7FFF<br />...<br />0x0200 | 0xxx xxxx | 31469 Bytes RAM (BaseRAM) |
+| 0x01FF<br />...<br />0x0100 | 0xxx xxxx | 256 Bytes Stack |
+| 0x00FF<br />...<br />0x0002 | 0xxx xxxx | 254 Bytes ZP RAM |
+| 0x0001, 0x0000 | 0xxx xxxx | 16 Bit digitale Ein/Ausgabe (optional) |
+
+Die Adressdekodierung erfolgt nun auf Basis dieser Tabelle. 
+
+| **Bereich**    | **A15** | **A14** | **A13** | **A12** |      | **/ALoRAM** | **/AHiRAM** | **/ALoROM** | **/AHiROM** |      | **/CSRAM** | **/CSHiROM** | **/CSLoROM** | **/CSIO** | **/LoRAM** | **/LoROM** | **/HiRAM** | **/HiROM** |
+| -------------- | ------- | ------- | ------- | ------- | ---- | ----------- | ----------- | ----------- | ----------- | ---- | ---------- | ------------ | ------------ | --------- | ---------- | ---------- | ---------- | ---------- |
+| **Base RAM**   | 0       | x       | x       | x       |      | x           | x           | x           | x           |      | 0          | 1            | 1            | 1         | 1          | 1          | 1          | 1          |
+| **Lo RAM**     | 1       | 0       | 0       | x       |      | 1           | x           | x           | x           |      | 0          | 1            | 1            | 1         | 1          | 1          | 1          | 1          |
+| **Lo RAM ext** | 1       | 0       | 0       | x       |      | 0           | x           | x           | x           |      | 1          | 1            | 1            | 1         | 0          | 1          | 1          | 1          |
+| **Lo ROM**     | 1       | 0       | 1       | x       |      | x           | x           | 1           | x           |      | 1          | 1            | 0            | 1         | 1          | 1          | 1          | 1          |
+| **Lo ROM ext** | 1       | 0       | 1       | x       |      | x           | x           | 0           | x           |      | 1          | 1            | 1            | 1         | 1          | 0          | 1          | 1          |
+| **Hi RAM**     | 1       | 1       | 0       | 0       |      | x           | 1           | x           | x           |      | 0          | 1            | 1            | 1         | 1          | 1          | 1          | 1          |
+| **Hi RAM ext** | 1       | 1       | 0       | 0       |      | x           | 0           | x           | x           |      | 1          | 1            | 1            | 1         | 1          | 1          | 0          | 1          |
+| **IO**         | 1       | 1       | 0       | 1       |      | x           | x           | x           | x           |      | 1          | 1            | 1            | 0         | 1          | 1          | 1          | 1          |
+| **Hi ROM**     | 1       | 1       | 1       | x       |      | x           | x           | x           | 1           |      | 1          | 0            | 1            | 1         | 1          | 1          | 1          | 1          |
+| **Hi ROM ext** | 1       | 1       | 1       | x       |      | x           | x           | x           | 0           |      | 1          | 1            | 1            | 1         | 1          | 1          | 1          | 0          |
+
+- Frage kann man beim RAM direkt den PHI2 als OE oder CS verwenden? PHI2 wird direct mit /WE verknüpft für das RAM.
+
+Für den Adressdecoder will ich einen ATF16V8B, also ein CPLD verwenden. Dadurch habe ich die Möglichkeit die Adressdekodierung variabel gestalten zu können. Für den IO Bereich setze ich einen zus. 74HC138 ein, der die unteren Pages aufteilt.
+Hier mal ein erster Entwurf des PLDs:
+
+```pld
+Name     W6502SBC_ADR ;
+PartNo   00 ;
+Date     20.07.2022 ;
+Revision 01 ;
+Designer wkla ;
+Company  nn ;
+Assembly None ;
+Location  ;
+Device   G16V8 ;
+
+/* *************** INPUT PINS *********************/
+PIN 1   =  A12; 
+PIN 2   =  A13;
+PIN 3   =  A14;
+PIN 4   =  A15;
+PIN 5 	=  ALORAM;
+PIN 6 	=  AHIRAM;
+PIN 7 	=  ALOROM;
+PIN 8 	=  AHIROM;
+
+/* *************** OUTPUT PINS *********************/
+PIN 12   =  CSRAM;
+PIN 13   =  CSHIROM;
+PIN 14   =  CSLOROM;
+PIN 15   =  CSIO;
+PIN 16   =  LORAM;
+PIN 17   =  LOROM;
+PIN 18   =  HIRAM;
+PIN 19   =  HIROM;
+
+CSRAM = (A15 & !A14 & !A13 & !ALORAM) # (A15 & !A14 & A13) # (A15 & A14 & !A13 & !A12 & !AHIRAM) # (A15 & A14 & !A13 & A12) # (A15 & A14 & A13) ;
+CSHIROM = !(A15 & A14 & A13 & AHIROM);
+CSLOROM = !(A15 & !A14 & A13 & ALOROM);
+CSIO= !(A15 & A14 & !A13 & A12);
+LORAM= !(A15 & !A14 & !A13 & !ALORAM);
+LOROM= !(A15 & !A14 & A13 & !ALOROM);
+HIRAM= !(A15 & A14 & !A13 & !A12 & !AHIRAM);
+HIROM= !(A15 & A14 & A13 & !AHIROM);
+```
+
+Und der Simulator dazu:
+
+```
+Name     W6502SBC_ADR ;
+PartNo   00 ;
+Date     20.07.2022 ;
+Revision 01 ;
+Designer wkla ;
+Company  nn ;
+Assembly None ;
+Location  ;
+Device   G16V8 ;
+
+ORDER: A15, A14, A13, A12, ALORAM, AHIRAM, ALOROM, AHIROM, CSRAM, CSHIROM, CSLOROM, CSIO, LORAM, LOROM, HIRAM, HIROM; 
+
+VECTORS:
+0 X X X X X X X L H H H H H H H 
+1 0 0 X 1 X X X L H H H H H H H 
+1 0 0 X 0 X X X H H H H L H H H 
+1 0 1 X X X 1 X H H L H H H H H 
+1 0 1 X X X 0 X H H H H H L H H 
+1 1 0 0 X 1 X X L H H H H H H H 
+1 1 0 0 X 0 X X H H H H H H L H 
+1 1 0 1 X X X X H H H L H H H H 
+1 1 1 X X X X 1 H L H H H H H H 
+1 1 1 X X X X 0 H H H H H H H L 
+```
+
+
 
 # Der Bus
 
