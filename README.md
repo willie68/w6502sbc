@@ -165,7 +165,7 @@ VECTORS:
 
 # Der Bus
 
-Der SBC soll später auf einer Backplane aufgesetzt werden können. Die Backplane übernimmt dann die Stromversorgung der verschiedenen Karten. Gerne hätte ich Edge Card Connectoren, wie sie auch im C64 Verwendung gefunden haben.  So braucht man für die Karten nur etwas Paltinenplatz und keinen eigenen Connector. 
+Der SBC soll später auf einer Backplane aufgesetzt werden können. Die Backplane übernimmt dann die Stromversorgung der verschiedenen Karten. Gerne hätte ich Edge Card Connectoren, wie sie auch im C64 Verwendung gefunden haben.  So braucht man für die Karten nur etwas Platinenplatz und keinen eigenen Connector. 
 
 ![sch_clock_reset](/images/edge_card_connector.png)
 
@@ -196,8 +196,8 @@ Werden alle 3 Bereiche (LoROM, HiRAM, LoRAM) genutzt, können 16KB zusammenhäng
 
 | Pin    | Belegung | Pin    | Belegung |
 | ------ | -------- | ------ | -------- |
-| 1      | +5V      | 2      | +5V      |
-| 3      | GND      | 4      | GND      |
+| 1      | GND      | 2      | GND      |
+| 3      | +5V      | 4      | +5V      |
 | 5..11  | D0..D6   | 6..12  | D1..D7   |
 | 13     | A0       | 14     | A1       |
 | 15..25 | ...      | 16..26 | ...      |
