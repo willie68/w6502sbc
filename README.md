@@ -13,7 +13,7 @@ Schon seit längerem beschäftigt mich ein altes Thema. Assembler und 6502. Mein
 
 - WDC65C02 CPU mit 4MHz (Takt per Programm umschaltbar)
 - WDC65C22 VIA mit 4MHz, evtl. davon 2
-- 6551 ASIC für die serielle Schnittstelle (R65C51) 
+- 6551 ACIA für die serielle Schnittstelle (R65C51) 
 - 32Kb oder 64KB SRAM (beides war vorhanden) 
 - EEPROM oder Flash als Kernal/Basic ROM
 - NMI und IRQ belegbar
@@ -65,7 +65,7 @@ Zur Zeit stell ich mir die Aufteilung so vor:
 | 0xFFFF<br />...<br />0xE000 | 111x xxxx | 8KB Kernel ROM, HiROM |
 | 0xDFFF<br /><br />0xD000    | 1101 xxxx | IO Bereich aufgeteilt in 16 Bereiche für die Peripherie.<br />0xD500: CS5<br />0xD400: CS4<br />0xD300: CS3<br />0xD200: CS2<br />0xD100: ASIC 1<br />0xD000: VIA 1<br /> |
 | 0xCFFF<br />...<br />0xC000 | 1100 xxxx | 4k RAM (HiRAM, kennt man aus dem C64) |
-| 0xBFFF<br />...<br />0xA000 | 101x xxxx | 8KB Interpreter ROM, LoROM |
+| 0xBFFF<br />...<br />0xA000 | 101x xxxx | 8KB Interpreter ROM, LoROM<br />Dieses ROM ist per NoLoROM abschaltbar und wird durch RAM ersetzt. Somit erhält man 51KB durchgängigen RAM Speicher. |
 | 0x9FFF<br />...<br />0x8000 | 100x xxxx | 8KB RAM (LoRAM) |
 | 0x7FFF<br />...<br />0x0200 | 0xxx xxxx | 31469 Bytes RAM (BaseRAM) |
 | 0x01FF<br />...<br />0x0100 | 0xxx xxxx | 256 Bytes Stack |
@@ -74,27 +74,28 @@ Zur Zeit stell ich mir die Aufteilung so vor:
 
 Die Adressdekodierung erfolgt nun auf Basis dieser Tabelle. 
 
-| **Bereich**    | **A15** | **A14** | **A13** | **A12** |      | **/ALoRAM** | **/AHiRAM** | **/ALoROM** | **/AHiROM** |      | **/CSRAM** | **/CSHiROM** | **/CSLoROM** | **/CSIO** | **/LoRAM** | **/LoROM** | **/HiRAM** | **/HiROM** |
-| -------------- | ------- | ------- | ------- | ------- | ---- | ----------- | ----------- | ----------- | ----------- | ---- | ---------- | ------------ | ------------ | --------- | ---------- | ---------- | ---------- | ---------- |
-| **Base RAM**   | 0       | x       | x       | x       |      | x           | x           | x           | x           |      | 0          | 1            | 1            | 1         | 1          | 1          | 1          | 1          |
-| **Lo RAM**     | 1       | 0       | 0       | x       |      | 1           | x           | x           | x           |      | 0          | 1            | 1            | 1         | 1          | 1          | 1          | 1          |
-| **Lo RAM ext** | 1       | 0       | 0       | x       |      | 0           | x           | x           | x           |      | 1          | 1            | 1            | 1         | 0          | 1          | 1          | 1          |
-| **Lo ROM**     | 1       | 0       | 1       | x       |      | x           | x           | 1           | x           |      | 1          | 1            | 0            | 1         | 1          | 1          | 1          | 1          |
-| **Lo ROM ext** | 1       | 0       | 1       | x       |      | x           | x           | 0           | x           |      | 1          | 1            | 1            | 1         | 1          | 0          | 1          | 1          |
-| **Hi RAM**     | 1       | 1       | 0       | 0       |      | x           | 1           | x           | x           |      | 0          | 1            | 1            | 1         | 1          | 1          | 1          | 1          |
-| **Hi RAM ext** | 1       | 1       | 0       | 0       |      | x           | 0           | x           | x           |      | 1          | 1            | 1            | 1         | 1          | 1          | 0          | 1          |
-| **IO**         | 1       | 1       | 0       | 1       |      | x           | x           | x           | x           |      | 1          | 1            | 1            | 0         | 1          | 1          | 1          | 1          |
-| **Hi ROM**     | 1       | 1       | 1       | x       |      | x           | x           | x           | 1           |      | 1          | 0            | 1            | 1         | 1          | 1          | 1          | 1          |
-| **Hi ROM ext** | 1       | 1       | 1       | x       |      | x           | x           | x           | 0           |      | 1          | 1            | 1            | 1         | 1          | 1          | 1          | 0          |
-
-- Frage kann man beim RAM direkt den PHI2 als OE oder CS verwenden? PHI2 wird direct mit /WE verknüpft für das RAM.
+| **Bereich**    | **A15** | **A14** | **A13** | **A12** |      | **/NOLOROM** | **/AloRAM** | **/AhiRAM** | **/AloROM** | **/AhiROM** |      | **/CSRAM** | **/CSHiROM** | **/CSLoROM** | **/CSIO** | **/LoRAM** | **/LoROM** | **/HiRAM** | **/HiROM** |                  |
+| -------------- | ------- | ------- | ------- | ------- | ---- | ------------ | ----------- | ----------- | ----------- | ----------- | ---- | ---------- | ------------ | ------------ | --------- | ---------- | ---------- | ---------- | ---------- | ---------------- |
+| **Base RAM**   | 0       | x       | x       | x       |      | x            | x           | x           | x           | x           |      | 0          | 1            | 1            | 1         | 1          | 1          | 1          | 1          | Lower 32K of RAM |
+| **Lo RAM**     | 1       | 0       | 0       | x       |      | x            | 1           | x           | x           | x           |      | 0          | 1            | 1            | 1         | 1          | 1          | 1          | 1          | internal Lo RAM  |
+| **Lo RAM ext** | 1       | 0       | 0       | x       |      | x            | 0           | x           | x           | x           |      | 1          | 1            | 1            | 1         | 0          | 1          | 1          | 1          | external Lo RAM  |
+| **No Lo ROM**  | 1       | 0       | 1       | x       |      | 0            | x           | x           | 1           | x           |      | 0          | 1            | 1            | 1         | 1          | 1          | 1          | 1          | no Lo ROM        |
+| **Lo ROM**     | 1       | 0       | 1       | x       |      | 1            | x           | x           | 1           | x           |      | 1          | 1            | 0            | 1         | 1          | 1          | 1          | 1          | internal Lo ROM  |
+| **Lo ROM ext** | 1       | 0       | 1       | x       |      | 1            | x           | x           | 0           | x           |      | 1          | 1            | 1            | 1         | 1          | 0          | 1          | 1          | external Lo ROM  |
+| **Hi RAM**     | 1       | 1       | 0       | 0       |      | x            | x           | 1           | x           | x           |      | 0          | 1            | 1            | 1         | 1          | 1          | 1          | 1          | internal Hi RAM  |
+| **Hi RAM ext** | 1       | 1       | 0       | 0       |      | x            | x           | 0           | x           | x           |      | 1          | 1            | 1            | 1         | 1          | 1          | 0          | 1          | external Hi RAM  |
+| **IO**         | 1       | 1       | 0       | 1       |      | x            | x           | x           | x           | x           |      | 1          | 1            | 1            | 0         | 1          | 1          | 1          | 1          | IO               |
+| **Hi ROM**     | 1       | 1       | 1       | x       |      | x            | x           | x           | x           | 1           |      | 1          | 0            | 1            | 1         | 1          | 1          | 1          | 1          | internal Hi ROM  |
+| **Hi ROM ext** | 1       | 1       | 1       | x       |      | x            | x           | x           | x           | 0           |      | 1          | 1            | 1            | 1         | 1          | 1          | 1          | 0          | external Hi ROM  |
 
 Für den Adressdecoder will ich einen ATF16V8B, also ein CPLD verwenden. Dadurch habe ich die Möglichkeit die Adressdekodierung variabel gestalten zu können. Für den IO Bereich setze ich einen zus. 74HC138 ein, der die unteren Pages aufteilt.
-Hier mal ein erster Entwurf des PLDs:
+
+Die Verknüpfung von PHI2 und RAM ist bereits enthalten. 
+Hier der Entwurf des PLDs: 
 
 ```pld
 Name     W6502SBC_ADR ;
-PartNo   00 ;
+PartNo   01 ;
 Date     20.07.2022 ;
 Revision 01 ;
 Designer wkla ;
@@ -112,6 +113,8 @@ PIN 5 	=  ALORAM;
 PIN 6 	=  AHIRAM;
 PIN 7 	=  ALOROM;
 PIN 8 	=  AHIROM;
+PIN 9   =  PHI2;
+PIN 11  =  NOLOROM;
 
 /* *************** OUTPUT PINS *********************/
 PIN 12   =  CSRAM;
@@ -123,12 +126,13 @@ PIN 17   =  LOROM;
 PIN 18   =  HIRAM;
 PIN 19   =  HIROM;
 
-CSRAM = (A15 & !A14 & !A13 & !ALORAM) # (A15 & !A14 & A13) # (A15 & A14 & !A13 & !A12 & !AHIRAM) # (A15 & A14 & !A13 & A12) # (A15 & A14 & A13) ;
+ 
+CSRAM = (A15 & !A14 & !A13 & !ALORAM) # (A15 & !A14 & A13 & NOLOROM) # (A15 & A14 & !A13 & !A12 & !AHIRAM) # (A15 & A14 & !A13 & A12) # (A15 & A14 & A13) # !PHI2;
 CSHIROM = !(A15 & A14 & A13 & AHIROM);
-CSLOROM = !(A15 & !A14 & A13 & ALOROM);
+CSLOROM = !(A15 & !A14 & A13 & ALOROM & NOLOROM);
 CSIO= !(A15 & A14 & !A13 & A12);
 LORAM= !(A15 & !A14 & !A13 & !ALORAM);
-LOROM= !(A15 & !A14 & A13 & !ALOROM);
+LOROM= !(A15 & !A14 & A13 & !ALOROM & NOLOROM);
 HIRAM= !(A15 & A14 & !A13 & !A12 & !AHIRAM);
 HIROM= !(A15 & A14 & A13 & !AHIROM);
 ```
@@ -137,7 +141,7 @@ Und der Simulator dazu:
 
 ```
 Name     W6502SBC_ADR ;
-PartNo   00 ;
+PartNo   01 ;
 Date     20.07.2022 ;
 Revision 01 ;
 Designer wkla ;
@@ -146,19 +150,25 @@ Assembly None ;
 Location  ;
 Device   G16V8 ;
 
-ORDER: A15, A14, A13, A12, ALORAM, AHIRAM, ALOROM, AHIROM, CSRAM, CSHIROM, CSLOROM, CSIO, LORAM, LOROM, HIRAM, HIROM; 
+ORDER: A15, A14, A13, A12, ALORAM, AHIRAM, ALOROM, AHIROM, NOLOROM, PHI2, CSRAM, CSHIROM, CSLOROM, CSIO, LORAM, LOROM, HIRAM, HIROM; 
 
 VECTORS:
-0 X X X X X X X L H H H H H H H 
-1 0 0 X 1 X X X L H H H H H H H 
-1 0 0 X 0 X X X H H H H L H H H 
-1 0 1 X X X 1 X H H L H H H H H 
-1 0 1 X X X 0 X H H H H H L H H 
-1 1 0 0 X 1 X X L H H H H H H H 
-1 1 0 0 X 0 X X H H H H H H L H 
-1 1 0 1 X X X X H H H L H H H H 
-1 1 1 X X X X 1 H L H H H H H H 
-1 1 1 X X X X 0 H H H H H H H L 
+0 X X X X X X X X 0 H H H H H H H H 
+0 X X X X X X X X 1 L H H H H H H H 
+1 0 0 X 1 X X X X 0 H H H H H H H H 
+1 0 0 X 1 X X X X 1 L H H H H H H H 
+1 0 0 X 0 X X X X X H H H H L H H H 
+1 0 1 X X X 1 X 1 X H H L H H H H H 
+1 0 1 X X X 0 X 1 X H H H H H L H H 
+1 0 1 X X X X X 0 0 H H H H H H H H 
+1 0 1 X X X X X 0 1 L H H H H H H H 
+1 1 0 0 X 1 X X X 0 H H H H H H H H 
+1 1 0 0 X 1 X X X 1 L H H H H H H H 
+1 1 0 0 X 0 X X X X H H H H H H L H 
+1 1 0 1 X X X X X X H H H L H H H H 
+1 1 1 X X X X 1 X X H L H H H H H H 
+1 1 1 X X X X 0 X X H H H H H H H L 
+
 ```
 
 
@@ -230,4 +240,38 @@ Mit LoROM eine eigene Shell mit eigener Sprache. So kann man Karten mit BASIC, V
 
 LoRAM und HiRAM könnten für Grafikkarten Verwendung finden.
 Alles zusammen gibt einem 24KB ROM (8KB (0xD000...0xDFFF sind den IO geschuldet)
+
+Eine Speicherkarte kann nun aber per NoLoROM Signal auch das LoROM ausschalten und erhält dadurch zus. RAM. Es ergibt sich damit ein 51KB grosser RAM Bereich (0x0000 .. 0xCFFF). 
+Warum liegt das Signal nicht auf dem Bus? 
+Auf dem Bus macht das Signal keinen Sinn, es wird durch einen Port geschaltet. Dadurch kann man programatisch das ROM aus und einblenden. Für eine BusKarte macht das nur Sinn, wenn es das HiROM besetzt. Somit kann man dort auch die ROM Abschaltung implementieren. 
+
+# Bauteile
+
+Die verschiedenen Bauteile zu bekommen war eine kleine Herausforderung.
+
+1. Ukrainekrieg, dadurch musste ich einiges an Schriftverkehr leisten, um überhaupt an CPU und Peripherie zu kommen
+2. kleine 8KB EEPROMs sind sehr schwer zu bekommen. Deswegen habe ich auch ein 1MBit große NOR Flash für die CPU Karte vorgesehen. Ich habe dabei folgende Adresszuordnungen vorgenommen.
+   A16..A14 gehen auf ein Jumperfeld mit 3 Jumpern, A13 -> A14, und A12..A0 gehen auf die entsprechenden Adressleitungen. Auf der CPU liegen LoROM und HiROM 8kb auseinander. durch diese Zuordnung ist es mir nun möglich, im Flash HiROm und LoROM jeweils direkt hintereinander zu legen und dann in einem Flash 8 verschiedene Versionen (selektierbar durch Jumper) zu programmieren.
+
+## BOM
+
+WDC65C02 CPU 
+
+WDC65C22 VIA
+
+R65C51 ACIA
+
+UM62256 32KB SRAM
+
+SST39F010-70 1MBit NOR Flash (128x8)
+
+ATF16V8 CPLD
+
+74HC138 3-8 Binärdecoder
+
+1MHZ Quarzoszilator
+
+DS1813 EconoReset
+
+div Widerständer, Switches, Jumper...
 

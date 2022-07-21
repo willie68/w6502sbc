@@ -4,7 +4,7 @@ Schon seit längerem beschäftigt mich ein altes Thema. Assembler und 6502. Mein
 
 - WDC65C02 CPU mit 4MHz (Takt per Programm umschaltbar)
 - WDC65C22 VIA mit 4MHz, evtl. davon 2
-- 6551 ASIC für die serielle Schnittstelle (R65C51) 
+- 6551 ACIA für die serielle Schnittstelle (R65C51) 
 - 32Kb oder 64KB SRAM (beides war vorhanden) 
 - EEPROM oder Flash als Kernal/Basic ROM
 - NMI und IRQ belegbar

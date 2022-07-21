@@ -31,7 +31,7 @@ PIN 18   =  HIRAM;
 PIN 19   =  HIROM;
 
  
-CSRAM = (A15 & !A14 & !A13 & !ALORAM) # (A15 & !A14 & A13 & NOLOROM) # (A15 & !A14 & A13) # (A15 & A14 & !A13 & !A12 & !AHIRAM) # (A15 & A14 & !A13 & A12) # (A15 & A14 & A13) # !PHI2 ;
+CSRAM = (A15 & !A14 & !A13 & !ALORAM) # (A15 & !A14 & A13 & NOLOROM) # (A15 & A14 & !A13 & !A12 & !AHIRAM) # (A15 & A14 & !A13 & A12) # (A15 & A14 & A13) # !PHI2;
 CSHIROM = !(A15 & A14 & A13 & AHIROM);
 CSLOROM = !(A15 & !A14 & A13 & ALOROM & NOLOROM);
 CSIO= !(A15 & A14 & !A13 & A12);
