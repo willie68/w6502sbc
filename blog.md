@@ -38,7 +38,13 @@ Schematic dazu
 
 ![sch_clock_reset](./images/sch_clock_reset.png)
 
+## BOM
 
+Quarzoszillator 1MHz (Oder auch mehr)
+
+Maxim DS1813 EconoReset
+
+PushSwitch
 
 # Busgedanken (19.07.22)
 
@@ -203,3 +209,11 @@ VECTORS:
 ```
 
 Wer einen Fehler findet mag ihn mir gerne mitteilen. 
+
+# der NOP Generator
+
+Der erste Schritt mit der CPU für mich ist ein sog. NOP Generator. Wenn der 6502 startet, ließt er zunächst aus den Adressen 0xFFFC/0xFFFD die Adresse, wo er seine Startroutine finden soll. Dort springt der Prozessor dann hin und führt den Code aus. Wenn man nun den Datenbus auf das NOP (no operation)  Kommando $EA fest verdrahtet, passiert folgendes: Zunächst ließt die CPU nach dem Einschalten (oder auch nach einem Reset) den Reset Vektor $EAEA. Damit wird nun der Adresszeiger geladen. Als nächstes ließt die CPU den ersten Befehl, auch wieder ein $EA und führt diesen aus. dabei wird der Adresszeiger inkrementiert. Da nichts zu tun ist, NOP, liesst er von der neuen Adresse den nächsten, erhöht wieder den Adresszeiger und führt diesen aus. Und so weiter... Wie man sieht erhöht sich die Adresse bis zum Überlauf des Adresszeiger. Dort wird dann einfach bei $0000 weiter gemacht und das ganze wiederholt sich. Wenn man nun an den Adressbus (vor allen an den höheren Bits) LED anschließt, sollte man einen typischen Zähler sehen. Wenn das funktioniert, funktioniert sowohl der Takt wie auch die CPU selber.
+
+Hier mal ein Plan dazu:
+
+![nop_generator](./images/nop_generator.png)
