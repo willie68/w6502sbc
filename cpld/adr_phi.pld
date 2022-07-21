@@ -18,6 +18,7 @@ PIN 6 	=  AHIRAM;
 PIN 7 	=  ALOROM;
 PIN 8 	=  AHIROM;
 PIN 9   =  PHI2;
+PIN 11  =  NOLOROM;
 
 /* *************** OUTPUT PINS *********************/
 PIN 12   =  CSRAM;
@@ -30,11 +31,11 @@ PIN 18   =  HIRAM;
 PIN 19   =  HIROM;
 
  
-CSRAM = (A15 & !A14 & !A13 & !ALORAM) # (A15 & !A14 & A13) # (A15 & A14 & !A13 & !A12 & !AHIRAM) # (A15 & A14 & !A13 & A12) # (A15 & A14 & A13) # !PHI2 ;
+CSRAM = (A15 & !A14 & !A13 & !ALORAM) # (A15 & !A14 & A13 & NOLOROM) # (A15 & !A14 & A13) # (A15 & A14 & !A13 & !A12 & !AHIRAM) # (A15 & A14 & !A13 & A12) # (A15 & A14 & A13) # !PHI2 ;
 CSHIROM = !(A15 & A14 & A13 & AHIROM);
-CSLOROM = !(A15 & !A14 & A13 & ALOROM);
+CSLOROM = !(A15 & !A14 & A13 & ALOROM & NOLOROM);
 CSIO= !(A15 & A14 & !A13 & A12);
 LORAM= !(A15 & !A14 & !A13 & !ALORAM);
-LOROM= !(A15 & !A14 & A13 & !ALOROM);
+LOROM= !(A15 & !A14 & A13 & !ALOROM & NOLOROM);
 HIRAM= !(A15 & A14 & !A13 & !A12 & !AHIRAM);
 HIROM= !(A15 & A14 & A13 & !AHIROM);
