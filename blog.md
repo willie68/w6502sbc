@@ -217,3 +217,25 @@ Der erste Schritt mit der CPU für mich ist ein sog. NOP Generator. Wenn der 650
 Hier mal ein Plan dazu:
 
 ![nop_generator](./images/nop_generator.png)
+
+Hier mal ein Blick auf das Steckbrett.
+
+![nop_board](./images/nop_board.jpg)
+
+Die Widerstände bilden das Wort $EA ab. D0 befindet sich links, D7 rechts.
+Der kleine schwarze Kasten ist mein 8 Kanal Logik Analyser. Angeschlossen habe ich R/W, A0, A10-A15.
+Hier mal ein Bild von dem "Programm"
+
+![nop_logic](./images/nop_logic.png)
+
+Man sieht hier sehr schön wie die Adressleitungen hoch gezählt werden. Wir können auch mal hineinzoomen um die Frequenz zu messen. Am besten der A0 Leitung. Jeder Wechsel ist eine neue Instruktion. (Kanalbelegung geändert R/W, Clk, A0, A11-A15)
+
+![nop_logic](./images/nop_logic_detail.png)
+
+
+
+Die Adressleitung wird mit 250KHz umgeschaltet, d.h. die NOP Kommandos werden mit 500KHz verarbeitet, das bedeutet ein NOP braucht 2 Takte.
+
+![nop_logic](./images/nop_logic_detail_2.png)
+
+Also funktioniert mein Aufbau erst einmal.
