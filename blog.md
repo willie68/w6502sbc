@@ -315,7 +315,6 @@ CSIO1 = !ACIAPORT_EQU;
 CSIO2 = !CSIO2PORT_EQU;
 CSIO3 = !CSIO3PORT_EQU;
 
-
 simulator:
 ORDER: A15, A14, A13, A12, A11, A10, A9, A8, PHI2, CSRAM, CSHIROM, CSIO, CSIO0, CSIO1, CSIO2, CSIO3; 
 
@@ -328,14 +327,20 @@ VECTORS:
 1 1 0 0 X X X X X H H H H H H H 
 1 1 0 0 X X X X X H H H H H H H 
 /* IO */ 
+/* CSIO0 */
 1 1 0 1 0 0 0 0 X H H L L H H H 
+/* CSIO1 */
 1 1 0 1 0 0 0 1 X H H L H L H H 
+/* CSIO2 */
 1 1 0 1 0 0 1 0 X H H L H H L H 
+/* CSIO3 */
 1 1 0 1 0 0 1 1 X H H L H H H L 
+/* nicht direkt benutzt */
 1 1 0 1 0 1 X X X H H L H H H H 
 1 1 0 1 1 X X X X H H L H H H H 
 /* ROM */
 1 1 1 X X X X X X H L H H H H H 
+
 
 ```
 
@@ -346,6 +351,12 @@ Und hier mal gleich der Schaltplan dazu:
 ## Tool WCUPL
 
 Das Tool WCUPL gibt's in meinem Repo (https://github.com/willie68/w6502sbc/releases). Dadurch entfällt das leidige Header abgleichen und Logic und Test liegen in einer Datei. Das Tool macht nicht viel. Evtl. Argumente werden direkt an CUPL durchgereicht. Aus der wpld Dateien werden `header:` und `pld:` zu einer #.pld Datei gemerged und `header`: und `simulator:` Teil zu der #.si Datei. Dann wird cupl aus dem gleichen Verzeichniss wo auch wcupl liegt gestartet. 
+
+## Test
+
+Bevor ich das ganze zusammen bauen, teste ich mal die PLD Logik.
+
+
 
 # Kommunikation ist alles
 
