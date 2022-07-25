@@ -1,19 +1,29 @@
 Name     adr_simple ;
 PartNo   01 ;
 Date     24.07.2022 ;
-Revision 02 ;
+Revision 03 ;
 Designer wkla ;
 Company  nn ;
 Assembly None ;
 Location  ;
 Device   G16V8 ;
 
-ORDER: A15, A14, A13, A12, PHI2, CSRAM, CSHIROM, CSIO; 
+ORDER: A15, A14, A13, A12, A11, A10, A9, A8, PHI2, CSRAM, CSHIROM, CSIO, CSIO0, CSIO1, CSIO2, CSIO3; 
 
 VECTORS:
-0 X X X 0 H H H 
-0 X X X 1 L H H 
-1 0 X X X H H H 
-1 1 0 0 X H H H 
-1 1 0 1 X H H L 
-1 1 1 X X H L H 
+/* RAM */
+0 X X X X X X X 0 H H H H H H H 
+0 X X X X X X X 1 L H H H H H H 
+/* 8000-CFFF nothing */ 
+1 0 X X X X X X X H H H H H H H 
+1 1 0 0 X X X X X H H H H H H H 
+1 1 0 0 X X X X X H H H H H H H 
+/* IO */ 
+1 1 0 1 0 0 0 0 X H H L L H H H 
+1 1 0 1 0 0 0 1 X H H L H L H H 
+1 1 0 1 0 0 1 0 X H H L H H L H 
+1 1 0 1 0 0 1 1 X H H L H H H L 
+1 1 0 1 0 1 X X X H H L H H H H 
+1 1 0 1 1 X X X X H H L H H H H 
+/* ROM */
+1 1 1 X X X X X X H L H H H H H 

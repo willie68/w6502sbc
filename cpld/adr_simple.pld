@@ -1,7 +1,7 @@
 Name     adr_simple ;
 PartNo   01 ;
 Date     24.07.2022 ;
-Revision 02 ;
+Revision 03 ;
 Designer wkla ;
 Company  nn ;
 Assembly None ;
@@ -9,25 +9,39 @@ Location  ;
 Device   G16V8 ;
 
 /* *************** INPUT PINS *********************/
-PIN 1   =  A12; 
-PIN 2   =  A13;
-PIN 3   =  A14;
-PIN 4   =  A15;
+PIN [1..8]   =  [A15..A8]; 
 PIN 9   =  PHI2;
 
 /* *************** OUTPUT PINS *********************/
 PIN 12   =  CSRAM;
 PIN 13   =  CSHIROM;
 PIN 15   =  CSIO;
-
+PIN 16   =  CSIO3;
+PIN 17   =  CSIO2;
+PIN 18   =  CSIO1;
+PIN 19   =  CSIO0;
 /* *************** LOGIC *********************/
 
+FIELD Addr = [A15..A8];
+IOPORT_EQU = Addr:[D000..DFFF];
+VIAPORT_EQU = Addr:[D000..D0FF];
+ACIAPORT_EQU = Addr:[D100..D1FF];
+CSIO2PORT_EQU = Addr:[D200..D2FF];
+CSIO3PORT_EQU = Addr:[D300..D3FF];
+CSRAM_EQU = Addr:[0000..7FFF];
+CSROM_EQU = Addr:[E000..FFFF];
+
 /* RAM */
-CSRAM = A15 # !PHI2;
+CSRAM = !CSRAM_EQU # !PHI2;
 
 /* 8kb of ROM */
-CSHIROM = !(A15 & A14 & A13);
+CSHIROM = !CSROM_EQU;
 
 /* IO */
-CSIO= !(A15 & A14 & !A13 & A12);
+CSIO= !IOPORT_EQU;
+CSIO0 = !VIAPORT_EQU;
+CSIO1 = !ACIAPORT_EQU;
+CSIO2 = !CSIO2PORT_EQU;
+CSIO3 = !CSIO3PORT_EQU;
+
 
