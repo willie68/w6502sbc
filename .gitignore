@@ -2,3 +2,9 @@
 hardware/BackupFiles/
 
 *.log
+
+software/wcupl/wcupl.exe
+
+software/wcupl/test/adr_simple.pld
+
+software/wcupl/test/adr_simple.si
