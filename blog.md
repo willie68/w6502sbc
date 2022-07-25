@@ -239,3 +239,13 @@ Die Adressleitung wird mit 250KHz umgeschaltet, d.h. die NOP Kommandos werden mi
 ![nop_logic](./images/nop_logic_detail_2.png)
 
 Also funktioniert mein Aufbau erst einmal.
+
+# EEPROM und mehr?
+
+Nun geht's richtig los. Jetzt wird ein EEPROM (AT28C64 8Kx8) angeschlossen. Und da das RAM ja eh auch bald dran ist, hab ich das gleich schon mal mit verkabelt. Zunächst aber nur Adress- und Datenleitung. Die Steuerleitungen vom RAM sind alle auf +5V, sodass das eigentlich nicht aktiv sein sollte. Beim EEPROM sind die Steuerleitung so gesetzt, daß es immer mit einem READ reagiert. Allerdings so richtig tun kann der SBC ja noch nix. Keine Ausgabe, keine Eingabe, da muss ich mir noch was überlegen.
+
+![nop_logic](./images/rom_ram.jpg)
+
+![nop_logic](./images/hookup_start.jpg)
+
+![nop_logic](./images/hookup_rom_ram.jpg)

@@ -250,8 +250,8 @@ Auf dem Bus macht das Signal keinen Sinn, es wird durch einen Port geschaltet. D
 Die verschiedenen Bauteile zu bekommen war eine kleine Herausforderung.
 
 1. Ukrainekrieg, dadurch musste ich einiges an Schriftverkehr leisten, um überhaupt an CPU und Peripherie zu kommen
-2. kleine 8KB EEPROMs sind sehr schwer zu bekommen. Deswegen habe ich auch ein 1MBit große NOR Flash für die CPU Karte vorgesehen. Ich habe dabei folgende Adresszuordnungen vorgenommen.
-   A16..A14 gehen auf ein Jumperfeld mit 3 Jumpern, A13 -> A14, und A12..A0 gehen auf die entsprechenden Adressleitungen. Auf der CPU liegen LoROM und HiROM 8kb auseinander. durch diese Zuordnung ist es mir nun möglich, im Flash HiROm und LoROM jeweils direkt hintereinander zu legen und dann in einem Flash 8 verschiedene Versionen (selektierbar durch Jumper) zu programmieren.
+2. kleine 8KB EEPROMs sind sehr schwer zu bekommen. Deswegen habe ich auch ein 1MBit großes NOR Flash für die CPU Karte vorgesehen. Ich habe dabei folgende Adresszuordnungen vorgenommen.
+   A16..A14 gehen auf ein Jumperfeld mit 3 Jumpern, A13 -> A14, und A12..A0 gehen auf die entsprechenden Adressleitungen. Auf der CPU liegen LoROM und HiROM 8kb auseinander. durch diese Zuordnung ist es mir nun möglich, im Flash HiROM und LoROM jeweils direkt hintereinander zu legen und dann in einem Flash 8 verschiedene Versionen (selektierbar durch Jumper) zu programmieren.
 
 ## BOM
 
