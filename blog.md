@@ -242,7 +242,7 @@ Also funktioniert mein Aufbau erst einmal.
 
 # EEPROM und mehr?
 
-Nun geht's richtig los. Jetzt wird ein EEPROM (AT28C64 8Kx8) angeschlossen. Und da das RAM ja eh auch bald dran ist, hab ich das gleich schon mal mit verkabelt. Zunächst aber nur Adress- und Datenleitung. Die Steuerleitungen vom RAM sind alle auf +5V, sodass das eigentlich nicht aktiv sein sollte. Beim EEPROM sind die Steuerleitung so gesetzt, daß es immer mit einem READ reagiert. Allerdings so richtig tun kann der SBC ja noch nix. Keine Ausgabe, keine Eingabe, da muss ich mir noch was überlegen. 
+Nun geht's richtig los. Jetzt wird ein EEPROM (AT28C64 8Kx8) angeschlossen. Und da das RAM ja eh auch bald dran ist, hab ich das gleich schon mal mit verkabelt. Zunächst aber nur Adress- und Datenleitung. Die Steuerleitungen vom RAM sind alle auf +5V, sodass das eigentlich nicht aktiv sein sollte. Beim EEPROM sind die Steuerleitung so gesetzt, dass es immer mit einem READ reagiert. Allerdings so richtig tun kann der SBC ja noch nix. Keine Ausgabe, keine Eingabe, da muss ich mir noch was überlegen. 
 
 ![nop_logic](./images/rom_ram.jpg)
 
@@ -254,8 +254,89 @@ Nachher:
 
 ![nop_logic](./images/hookup_rom_ram.jpg)
 
-Hmm, derzeit wird also alles aus dem ROM geladen. Egal wo der Prozessor hin greift, es antwortet immer das ROM. Die 8KB werden im kompletten Speicher dupliziert. Also 8x. Wenn ich nun das ROM mit $EA (NOP) fülle, sollte sich eigentlich der gleiche Effekt wie beim NOP Generator ergeben. Also hab ich das WWPROM in den PRommer gepackt, mit $EA gefüllt und wieder eingebaut.
+Hmm, derzeit wird also alles aus dem ROM geladen. Egal wo der Prozessor hin greift, es antwortet immer das ROM. Die 8KB werden im kompletten Speicher dupliziert. Also 8x. Wenn ich nun das ROM mit $EA (NOP) fülle, sollte sich eigentlich der gleiche Effekt wie beim NOP Generator ergeben. Also hab ich das WWPROM in den Prommer gepackt, mit $EA gefüllt und wieder eingebaut.
 
 Klar das hat nicht auf Anhieb funktioniert. Wer findet den Fehler? Der Adresszähler machte komische Dinge. Erst als ich das RAM heraus genommen hatte, gings. Also das RAM mit dem Progger getestet. Der sagt: "alles OK". Noch mal auf die Schaltung geschaut, da sah ich es... Ich hab den GND auf die falsche Rail (+5V) gesteckt. Also RAM wieder eingebaut, GND richtig verbunden und schon gings. 
 
 ![video_nop_ram_rom](./images/nop_ram_rom.mp4)
+
+# Die Logik
+
+Um RAM und ROM und später auch die Interfacebausteine unter den richtigen Adressen ansprechen zu können, ist etwas Logik nötig. Die großen Speicherblöcke für RAM und ROM will ich über den CPLD ansprechen. Das ist schnell und man kann die Logik später modifizieren ohne die Schaltung zu ändern. Den für den IO Bereich hab ich den Bereich von $D000 bis $DFFF also 4Kb vorgesehen. Diese will ich in 16 Bereiche weitere aufteilen. Jeder Bereich hat dann Platz für 256 Register (A0-A7). Auf dem SBC verwende ich dazu einen 74HC138. Dieser wird einerseits mit dem CSIO Signal aus dem CPLD selektiert. Als zweite Selektion kommt A11 zum Einsatz. Dekodiert werden dann A10..A8. Somit habe ich die untere Hälfte der 16 Bereiche bereits hier dekodiert. Der CPLD bekommt zur Dekodierung zunächst die Leitungen A12..A15. Damit kann man die jeweiligen 4K Blöcke aufteilen. Für das RAM muss man zusätzlich auch noch die CLK (PHI2) Leitung verwenden, damit die Schreibvorgänge richtig synchronisiert werden. (https://wilsonminesco.com/6502primer/addr_decoding.html) Im Projekt habe ich ja bereits die große Adress-CLPD Logik geschrieben. Hier die minimale Variante.
+
+adr_simple.pld
+
+```CPLD
+Name     W6502SBC_ADR_SIMPLE ;
+PartNo   01 ;
+Date     24.07.2022 ;
+Revision 02 ;
+Designer wkla ;
+Company  nn ;
+Assembly None ;
+Location  ;
+Device   G16V8 ;
+
+/* *************** INPUT PINS *********************/
+PIN 1   =  A12; 
+PIN 2   =  A13;
+PIN 3   =  A14;
+PIN 4   =  A15;
+PIN 9   =  PHI2;
+
+/* *************** OUTPUT PINS *********************/
+PIN 12   =  CSRAM;
+PIN 13   =  CSHIROM;
+PIN 15   =  CSIO;
+
+/* *************** LOGIC *********************/
+
+/* RAM */
+CSRAM = A15 # !PHI2;
+
+/* 8kb of ROM */
+CSHIROM = !(A15 & A14 & A13);
+
+/* IO */
+CSIO= !(A15 & A14 & !A13 & A12);
+
+```
+
+adr_simple.si
+
+```CPLD
+Name     W6502SBC_ADR_SIMPLE ;
+PartNo   01 ;
+Date     24.07.2022 ;
+Revision 02 ;
+Designer wkla ;
+Company  nn ;
+Assembly None ;
+Location  ;
+Device   G16V8 ;
+
+ORDER: A15, A14, A13, A12, PHI2, CSRAM, CSHIROM, CSIO; 
+
+VECTORS:
+0 X X X 0 H H H 
+0 X X X 1 L H H 
+1 0 X X X H H H 
+1 1 0 0 X H H H 
+1 1 0 1 X H H L 
+1 1 1 X X H L H 
+
+```
+
+
+
+# Kommunikation ist alles
+
+Nun kommt zunächst der 6522 mit dran. Damit ich endlich auch mal ein kleines Programm in den Rechner laden kann und dann auch sehe was passiert.
+
+# Terminal
+
+Da mein SBC ja weder über Tastatur noch Monitor verfügt muss eine andere Lösung her. Dazu verwende ich eine serielle Schnittstelle. Als Baustein verwende ich einen R65C51. Der entsprechende W65C51 ist leider derzeit nicht zu bekommen. Weiterhin hört man von größeren Problemen mit dem Chip. Um damit ein Terminal auf dem PC anzusprechen muss zusätzlich auch noch ein Seriell/USB Adapter her. Die gibt es zum Glück mannigfach. 
+
+# Software
+
+Auf dem SBC soll verschiedene Software zum Einsatz kommen. Als einfachstes will ich zunächst Steve Wozniak WOZMON integrieren. Danach eine VTL-2 Variante. Und dann hätte ich gerne ein Basic. und und und...
