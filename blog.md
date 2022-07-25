@@ -354,9 +354,9 @@ Das Tool WCUPL gibt's in meinem Repo (https://github.com/willie68/w6502sbc/relea
 
 ## Test
 
-Bevor ich das ganze zusammen bauen, teste ich mal die PLD Logik.
+Bevor ich das ganze zusammen bauen, teste ich mal die PLD Logik. Man glaubt es kaum, der 1. Test, kompilieren, brennen mit TL866, und auf dem Steckbrett aufbauen, war direkt erfolgreich. Sie tut was sie soll. Ich hab mal ein paar Kombinationen durchgespielt.
 
-
+<img src="./images/adr_logic_simple_hookup.jpg" style="zoom:33%;" />
 
 # Kommunikation ist alles
 
