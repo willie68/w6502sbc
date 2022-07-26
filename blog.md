@@ -262,7 +262,7 @@ Klar das hat nicht auf Anhieb funktioniert. Wer findet den Fehler? Der Adresszä
 
 # Die Logik
 
-Um RAM und ROM und später auch die Interfacebausteine unter den richtigen Adressen ansprechen zu können, ist etwas Logik nötig. Die großen Speicherblöcke für RAM und ROM will ich über den CPLD ansprechen. Das ist schnell und man kann die Logik später modifizieren ohne die Schaltung zu ändern. Den für den IO Bereich hab ich den Bereich von $D000 bis $DFFF also 4Kb vorgesehen. Diese will ich in 16 Bereiche weitere aufteilen. Jeder Bereich hat dann Platz für 256 Register (A0-A7). Auf dem SBC verwende ich dazu einen 74HC138. Dieser wird einerseits mit dem CSIO Signal aus dem CPLD selektiert. Als zweite Selektion kommt A11 zum Einsatz. Dekodiert werden dann A10..A8. Somit habe ich die untere Hälfte der 16 Bereiche bereits hier dekodiert. Der CPLD bekommt zur Dekodierung zunächst die Leitungen A12..A15. Damit kann man die jeweiligen 4K Blöcke aufteilen. Für das RAM muss man zusätzlich auch noch die CLK (PHI2) Leitung verwenden, damit die Schreibvorgänge richtig synchronisiert werden. (https://wilsonminesco.com/6502primer/addr_decoding.html) Im Projekt habe ich ja bereits die große Adress-CLPD Logik geschrieben. Hier die minimale Variante. Da WinCUPL auf keinem meiner Rechner mehr läuft, habe ich mir eine Batch geschrieben, mit denen ich sowohl das JED File erzeuge wie auch gleich einen Test durchführen kann. Basiert auf meinem kleinen WCUPL Tool. 
+Um RAM und ROM und später auch die Interfacebausteine unter den richtigen Adressen ansprechen zu können, ist etwas Logik nötig. Die großen Speicherblöcke für RAM und ROM will ich über den CPLD ansprechen. Das ist schnell und man kann die Logik später modifizieren ohne die Schaltung zu ändern. Den für den IO Bereich hab ich den Bereich von $D000 bis $DFFF also 4Kb vorgesehen. Diese will ich in 16 Bereiche aufteilen. Jeder Bereich hat dann Platz für 256 Register (A0-A7). Auf dem SBC verwende ich dazu einen 74HC138. Dieser wird einerseits mit dem CSIO Signal aus dem CPLD selektiert. Als zweite Selektion kommt A11 zum Einsatz. Dekodiert werden dann A10..A8. Somit habe ich die untere Hälfte der 16 Bereiche bereits hier dekodiert. Der CPLD bekommt zur Dekodierung zunächst die Leitungen A12..A15. Damit kann man die jeweiligen 4K Blöcke aufteilen. Für das RAM muss man zusätzlich auch noch die CLK (PHI2) Leitung verwenden, damit die Schreibvorgänge richtig synchronisiert werden. (https://wilsonminesco.com/6502primer/addr_decoding.html) Im Projekt habe ich ja bereits die große Adress-CLPD Logik geschrieben. Für das Steckbrett verwende ich eine kleinere Variante. Hier wird erst einmal nur der der CPLD zur Adressdekodierung verwendet. Da sich die eigentliche Adressaufteilung nicht ändern soll muss ich auf den CPLD die Adressen A15..A8 legen. Für das RAM brauche ich zusätzlich noch das CLK 8PHI2) Signal. Hier mal die PLD Datei im meinem eigenen WPLD Format. Dazu später mehr.
 
 adr_simple.wpld
 
@@ -348,19 +348,21 @@ Und hier mal gleich der Schaltplan dazu:
 
 ![](./images/adr_logic_simple.png)
 
-## Tool WCUPL
+## WPLD Format und das Tool WCUPL
 
-Das Tool WCUPL gibt's in meinem Repo (https://github.com/willie68/w6502sbc/releases). Dadurch entfällt das leidige Header abgleichen und Logic und Test liegen in einer Datei. Das Tool macht nicht viel. Evtl. Argumente werden direkt an CUPL durchgereicht. Aus der wpld Dateien werden `header:` und `pld:` zu einer #.pld Datei gemerged und `header`: und `simulator:` Teil zu der #.si Datei. Dann wird cupl aus dem gleichen Verzeichniss wo auch wcupl liegt gestartet. 
+Da WinCUPL auf keinem meiner Rechner mehr läuft, habe ich mir eine Batch geschrieben, mit denen ich sowohl das JED File erzeuge, wie auch gleich einen Test durchführen kann. Ich persönlich mag es allerdings, wenn ich die Quellen an einer Stelle habe. Die Dopplung der Header von der PLD und SI-Datei  und damit die manuelle syncronisation zwischen den beiden finde ich persönlich unschön. Deswegen hab ich mir das einfache WPLD Format ausgedacht und dazu das WCUPL Tool geschrieben. Das Tool WCUPL gibt's in meinem Repo (https://github.com/willie68/w6502sbc/releases). Dadurch entfällt das leidige Header abgleichen und Logic und Test liegen in einer Datei. Das Tool macht nicht viel. Evtl. Argumente werden direkt an CUPL durchgereicht. Aus der wpld Dateien werden `header:` und `pld:` zu einer #.pld Datei gemerged und `header`: und `simulator:` Teil zu der #.si Datei. Dann wird cupl aus dem gleichen Verzeichniss wo auch wcupl liegt gestartet. 
 
 ## Test
 
-Bevor ich das ganze zusammen bauen, teste ich mal die PLD Logik. Man glaubt es kaum, der 1. Test, kompilieren, brennen mit TL866, und auf dem Steckbrett aufbauen, war direkt erfolgreich. Sie tut was sie soll. Ich hab mal ein paar Kombinationen durchgespielt.
+Bevor ich das ganze zusammen baue, teste ich mal die PLD Logik. Man glaubt es kaum, der 1. Test, kompilieren, brennen mit TL866, und auf dem Steckbrett aufbauen, war direkt erfolgreich. Sie tut was sie soll. Ich hab mal ein paar Kombinationen durchgespielt.
 
 <img src="./images/adr_logic_simple_hookup.jpg" style="zoom:33%;" />
 
 # Kommunikation ist alles
 
-Nun kommt zunächst der 6522 mit dran. Damit ich endlich auch mal ein kleines Programm in den Rechner laden kann und dann auch sehe was passiert.
+Nun kommt zunächst der 6522 mit dran. Damit ich endlich auch mal ein kleines Programm in den Rechner laden kann und dann auch sehe was passiert. Die Register des 6522 sollen an den VIA Port zu finden sein, also schliesse ich den CS2B and den CSIO0B an. CS1 liegt direkt auf +5V. 
+
+![](./images/via_schematic.png)
 
 # Terminal
 
