@@ -360,9 +360,15 @@ Bevor ich das ganze zusammen baue, teste ich mal die PLD Logik. Man glaubt es ka
 
 # Kommunikation ist alles
 
-Nun kommt zunächst der 6522 mit dran. Damit ich endlich auch mal ein kleines Programm in den Rechner laden kann und dann auch sehe was passiert. Die Register des 6522 sollen an den VIA Port zu finden sein, also schliesse ich den CS2B and den CSIO0B an. CS1 liegt direkt auf +5V. 
+Nun kommt zunächst der 6522 mit dran. Damit ich endlich auch mal ein kleines Programm in den Rechner laden kann und dann auch sehe was passiert. Die Register des 6522 sollen an den VIA Port zu finden sein, also schließe ich den CS2B and den CSIO0B an. CS1 liegt direkt auf +5V. 
 
 ![](./images/via_schematic.png)
+
+![hookup_6522_via](./images/hookup_6522_via.jpg)
+
+
+
+
 
 # Terminal
 
