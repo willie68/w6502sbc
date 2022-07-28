@@ -2,34 +2,34 @@
 
 	.org $E000
 	.memory "fill", $E000, $2000, $ff
-	_VIA .equ $D000
-	_ORB .equ _VIA
-	_ORA .equ _VIA+1
-	_DDRB .equ _VIA+2
-	_DDRA .equ _VIA+3
-	_T1Cl .equ _VIA+4
-	_T1CH .equ _VIA+5
-	_T1LL .equ _VIA+6
-	_T1LH .equ _VIA+7
-	_T2CL .equ _VIA+8
-	_T2CH .equ _VIA+9
-	_SR .equ _VIA+$A
-	_ACR .equ _VIA+$B
-	_PCR .equ _VIA+$C
-	_IFR .equ _VIA+$D
-	_IER .equ _VIA+$E
-	_IRA .equ _VIA+$F
-	_ACIA .equ $D100
+	VIA .equ $D000
+	VIA_ORB .equ VIA
+	VIA_ORA .equ VIA+1
+	VIA_DDRB .equ VIA+2
+	VIA_DDRA .equ VIA+3
+	VIA_T1Cl .equ VIA+4
+	VIA_T1CH .equ VIA+5
+	VIA_T1LL .equ VIA+6
+	VIA_T1LH .equ VIA+7
+	VIA_T2CL .equ VIA+8
+	VIA_T2CH .equ VIA+9
+	VIA_SR .equ VIA+$A
+	VIA_ACR .equ VIA+$B
+	VIA_PCR .equ VIA+$C
+	VIA_IFR .equ VIA+$D
+	VIA_IER .equ VIA+$E
+	VIA_IRA .equ VIA+$F
+	ACIA .equ $D100
 do_reset:	
 // setting up the 65C22 VIA
 	LDA #$FF
-	STA _DDRA
+	STA VIA_DDRA
 	LDA #$AA
-	STA _ORA
+	STA VIA_ORA
 blinkloop:
     delay(250)
 	ROR
-	STA _ORA
+	STA VIA_ORA
 	jmp blinkloop
 
 .macro delay(ms)
