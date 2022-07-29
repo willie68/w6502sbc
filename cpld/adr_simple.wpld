@@ -17,6 +17,7 @@ PIN 9   =  PHI2;
 /* *************** OUTPUT PINS *********************/
 PIN 12   =  CSRAM;
 PIN 13   =  CSHIROM;
+PIN 14   =  CSZP;
 PIN 15   =  CSIO;
 PIN 16   =  CSIO3;
 PIN 17   =  CSIO2;
@@ -32,6 +33,10 @@ CSIO2PORT_EQU = Addr:[D200..D2FF];
 CSIO3PORT_EQU = Addr:[D300..D3FF];
 CSRAM_EQU = Addr:[0000..7FFF];
 CSROM_EQU = Addr:[E000..FFFF];
+CSZP_EQU = Addr:[0000..00FF];
+
+/* ZP */
+CSZP = !CSZP_EQU;
 
 /* RAM */
 CSRAM = !CSRAM_EQU # !PHI2;
@@ -47,27 +52,31 @@ CSIO2 = !CSIO2PORT_EQU;
 CSIO3 = !CSIO3PORT_EQU;
 
 simulator:
-ORDER: A15, A14, A13, A12, A11, A10, A9, A8, PHI2, CSRAM, CSHIROM, CSIO, CSIO0, CSIO1, CSIO2, CSIO3; 
+ORDER: A15, A14, A13, A12, A11, A10, A9, A8, PHI2, CSZP, CSRAM, CSHIROM, CSIO, CSIO0, CSIO1, CSIO2, CSIO3; 
 
 VECTORS:
+/* ZP */
+0 0 0 0 0 0 0 0 X L X H H H H H H 
+
 /* RAM */
-0 X X X X X X X 0 H H H H H H H 
-0 X X X X X X X 1 L H H H H H H 
+0 X X X X X X X 0 X H H H H H H H 
+0 X X X X X X X 1 X L H H H H H H 
+
 /* 8000-CFFF nothing */ 
-1 0 X X X X X X X H H H H H H H 
-1 1 0 0 X X X X X H H H H H H H 
-1 1 0 0 X X X X X H H H H H H H 
+1 0 X X X X X X X H H H H H H H H 
+1 1 0 0 X X X X X H H H H H H H H 
+1 1 0 0 X X X X X H H H H H H H H 
 /* IO */ 
 /* CSIO0 */
-1 1 0 1 0 0 0 0 X H H L L H H H 
+1 1 0 1 0 0 0 0 X H H H L L H H H 
 /* CSIO1 */
-1 1 0 1 0 0 0 1 X H H L H L H H 
+1 1 0 1 0 0 0 1 X H H H L H L H H 
 /* CSIO2 */
-1 1 0 1 0 0 1 0 X H H L H H L H 
+1 1 0 1 0 0 1 0 X H H H L H H L H 
 /* CSIO3 */
-1 1 0 1 0 0 1 1 X H H L H H H L 
+1 1 0 1 0 0 1 1 X H H H L H H H L 
 /* nicht direkt benutzt */
-1 1 0 1 0 1 X X X H H L H H H H 
-1 1 0 1 1 X X X X H H L H H H H 
+1 1 0 1 0 1 X X X H H H L H H H H 
+1 1 0 1 1 X X X X H H H L H H H H 
 /* ROM */
-1 1 1 X X X X X X H L H H H H H 
+1 1 1 X X X X X X H H L H H H H H 

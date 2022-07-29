@@ -20,6 +20,7 @@
 	VIA_IER .equ VIA+$E
 	VIA_IRA .equ VIA+$F
 	ACIA .equ $D100
+
 do_reset:	
 // setting up the 65C22 VIA
 	LDA #$FF
