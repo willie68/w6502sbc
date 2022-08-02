@@ -1,9 +1,0 @@
-$e000 a9 0c      lda #$0c
-$e002 85 0c      sta $0c
-$e004 4c 04 e0   jmp $e004
-$e007 ea         nop
-$e008 40         rti
-$e009 ea         nop
-$e00a 40         rti
-
-$fffa 07 e0 00 e0 09 e0         .à.à.à

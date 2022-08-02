@@ -1,4 +1,0 @@
-do_start $e000
-loop $e004
-do_nmi $e007
-do_irq $e009
