@@ -2,7 +2,7 @@
 
 	.org $E000
 	.memory "fill", $E000, $2000, $ff
-	VIA .equ $D000
+	VIA .equ $B000
 	VIA_ORB .equ VIA
 	VIA_ORA .equ VIA+1
 	VIA_DDRB .equ VIA+2
