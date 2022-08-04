@@ -368,7 +368,121 @@ Nun kommt zunächst der 6522 mit dran. Damit ich endlich auch mal ein kleines Pr
 
 
 
+# Sch#### Breadboards
 
+Leider ist mir beim Testen aufgefallen, dass es einige Adressverbindungen gibt, die nicht richtig kontakt haben. Also musste ich die gesamte Adressverkabellung neu machen. Das macht leider keinen Spaß. Deswegen geht's hier derzeit nicht weiter. 
+
+Dafür habe ich den ersten PCB Entwurf abgeschickt.
+
+ ![pcb_v1](./images/pcb_v1.png)
+
+
+
+![pcb_v1](./images/pcb_3d_v1.png)
+
+Es gibt jetzt auch eine neue Adressverteilung.
+
+## simple Variante
+
+| Bereich                     | Hi Adress Nibble                        | Beschreibung                                                 |
+| --------------------------- | --------------------------------------- | ------------------------------------------------------------ |
+| 0xFFFF<br />...<br />0xC000 | 11xx xxxx                               | 16KB Kernel ROM, HiROM                                       |
+| 0xBFFF<br /><br />0xB000    | 1011 xxxx                               | IO Bereich aufgeteilt in 16 Bereiche für die Peripherie.<br />0xD300: CS3 #0011<br />0xD200: CS2 #0010<br />0xD100: ASIC 1 #0001<br />0xD000: VIA 1 #0000<br />CS2 und 3 gehen nur auf den "Bus"<br /> |
+| 0xAFFF<br />...<br />0x8000 | 1010 xxxx<br />1001 xxxx<br />1000 xxxx | 12k ext ROM, BASIC oder anderes ROM                          |
+| 0x7FFF<br />...<br />0x0200 | 0xxx xxxx                               | 31469 Bytes RAM (BaseRAM)                                    |
+| 0x01FF<br />...<br />0x0100 | 0xxx xxxx                               | 256 Bytes Stack                                              |
+| 0x00FF<br />...<br />0x0000 | 0xxx xxxx                               | 256 Bytes ZP RAM                                             |
+
+Für den Adressdecoder wird ein ATF16V8B, also ein CPLD, verwendet. Dadurch habe ich die Möglichkeit die Adressdekodierung variabel gestalten zu können. Da noch genügend Pins im CPLD vorhanden sind kann ich die unteren 4 IO Leitungen auch direkt dekodieren. Falls mehr gewünscht sind, kann man per CSIO einen weitern Dekodierer kaskadieren. (74HC138 o.ä.)
+
+Die Verknüpfung von PHI2 und RAM ist bereits enthalten. 
+Hier der Entwurf des PLDs: 
+
+```wpld
+header:
+Name     adr_simple ;
+PartNo   01 ;
+Date     24.07.2022 ;
+Revision 03 ;
+Designer wkla ;
+Company  nn ;
+Assembly None ;
+Location  ;
+Device   G16V8 ;
+
+pld:
+/* *************** INPUT PINS *********************/
+PIN [1..8]   =  [A15..A8]; 
+PIN 9   =  PHI2;
+
+/* *************** OUTPUT PINS *********************/
+PIN 12   =  CSRAM;
+PIN 13   =  CSHIROM;
+PIN 14   =  CSEXTROM;
+PIN 15   =  CSIO;
+PIN 16   =  CSIO3;
+PIN 17   =  CSIO2;
+PIN 18   =  CSIO1;
+PIN 19   =  CSIO0;
+/* *************** LOGIC *********************/
+
+FIELD Addr = [A15..A8];
+CSRAM_EQU = Addr:[0000..7FFF]; // 32KB
+IOPORT_EQU = Addr:[B000..BFFF]; // 4KB
+VIAPORT_EQU = Addr:[B000..B0FF];
+ACIAPORT_EQU = Addr:[B100..B1FF];
+CSIO2PORT_EQU = Addr:[B200..B2FF];
+CSIO3PORT_EQU = Addr:[B300..B3FF];
+CSEXTROM_EQU = Addr:[8000..AFFF]; // 12KB
+CSROM_EQU = Addr:[C000..FFFF];  // 16KB
+
+/* ZP */
+CSEXTROM = !CSEXTROM_EQU;
+
+/* RAM */
+CSRAM = !CSRAM_EQU # !PHI2;
+
+/* 8kb of ROM */
+CSHIROM = !CSROM_EQU;
+
+/* IO */
+CSIO= !IOPORT_EQU;
+CSIO0 = !VIAPORT_EQU;
+CSIO1 = !ACIAPORT_EQU;
+CSIO2 = !CSIO2PORT_EQU;
+CSIO3 = !CSIO3PORT_EQU;
+
+simulator:
+ORDER: A15, A14, A13, A12, A11, A10, A9, A8, PHI2, CSEXTROM, CSRAM, CSHIROM, CSIO, CSIO0, CSIO1, CSIO2, CSIO3; 
+
+VECTORS:
+/* internal RAM */
+0 X X X X X X X 0 H H H H H H H H 
+0 X X X X X X X 1 H L H H H H H H 
+
+/* 8000-AFFF external Rom */ 
+1 0 0 0 X X X X X L H H H H H H H 
+1 0 0 1 X X X X X L H H H H H H H 
+1 0 1 0 X X X X X L H H H H H H H 
+
+/* IO */ 
+/* CSIO0 */
+1 0 1 1 0 0 0 0 X H H H L L H H H 
+/* CSIO1 */
+1 0 1 1 0 0 0 1 X H H H L H L H H 
+/* CSIO2 */
+1 0 1 1 0 0 1 0 X H H H L H H L H 
+/* CSIO3 */
+1 0 1 1 0 0 1 1 X H H H L H H H L 
+/* nicht direkt benutzt */
+1 0 1 1 0 1 X X X H H H L H H H H 
+1 0 1 1 1 X X X X H H H L H H H H 
+/* ROM */
+1 1 X X X X X X X H H L H H H H H 
+
+```
+
+Das Format ist wpld. Eine Erweiterung von pld von mir. Mit diesem kleinen Tool kann ich PLD und SI File in einer Datei bearbeiten. Das Tool generiert automatisch die erforderlichen Dateien (pld und si) aus dieser Quelle in einem eigenen Unterverzeichnis und startet dort dann CUPL.
 
 # Terminal
 

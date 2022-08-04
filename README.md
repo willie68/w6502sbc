@@ -159,7 +159,7 @@ VECTORS:
 
 ```
 
-Das FOrmat ist wpld. Eine Erweiterung von pld von mir. Mit diesem kleinen Tool kann ich PLD und SI File in einer Datei bearbeiten. Das Tool generiert automatisch die erforderlichen Dateien (pld und si) aus dieser Quelle in einem eigenen Unterverzeichniss und startet dort dann CUPL.
+Das Format ist wpld. Eine Erweiterung von pld von mir. Mit diesem kleinen Tool kann ich PLD und SI File in einer Datei bearbeiten. Das Tool generiert automatisch die erforderlichen Dateien (pld und si) aus dieser Quelle in einem eigenen Unterverzeichnis und startet dort dann CUPL.
 
 ## C64 like
 
