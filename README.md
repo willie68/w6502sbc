@@ -41,8 +41,6 @@ Der 6502 kann einen Adressbereich von 64Kb ansprechen. Dabei müssen folgende Be
 
 die beiden unteren Seiten (eine Seite sind immer 256 Bytes) sollten/müssen RAM sein. Die Zeropage (ZP) also der Bereich von 0x0000 -0x00FF hat eine besondere Bedeutung im 6502. Hier liegen "Register" die sehr schnell angesprochen werden können. Auch Bitmanipulation sind sehr einfach. 
 
-Evtl. macht es somit Sinn ähnlich wie im 6510 (C64) die beiden unteren Bytes mit einem digitalen Ein/Ausgang zu besetzen. Damit könnte man sehr schnelle Anbindungen schreiben. z.B. SPI oder Taktumschaltung, oder auch ROM Selektion (dazu später mehr).
-
 In der Page 1 liegt der "interne Stack" vom 6502. Auch dieser Bereich muss mit RAM versorgt sein, will man Stackbefehle oder auch nur Unterprogramme benutzen. 
 
 Im obersten Bereich liegen beim 6502 die Start und Interrupt Vektoren. d.h. die Adressen 0xFFFA..0xFFFF sollten im ROM liegen. 
@@ -53,13 +51,121 @@ Somit ergibt sich zunächst folgende Einteilung
 | ------------- | ------------- | ---- | ---- | ---- | ---- | ---- | ---------------- |
 | RAM ZP        | RAM Stack     |      |      |      |      |      | ROM für Vektoren |
 
-Nun gibt es aber mittlerweile RAM und ROM im Überfluss, d.h. an kleine RAM oder ROM Bausteine zu kommen ist leider schwierig und Preislich auch nicht nötig. (JA, auch der Preis des Systemes ist immer wieder zu betrachten)
+Nun gibt es aber mittlerweile RAM und ROM im Überfluss, d.h. an kleine RAM oder ROM Bausteine zu kommen ist leider schwierig und Preislich auch nicht nötig. (Ja, auch der Preis des Systemes ist immer wieder zu betrachten)
 
 Da ich gerne mit BASIC oder auch mit anderen Sprachen herumhantieren möchte, ist es notwendig, dem Rechner eine ordentlich Portion RAM zu spendieren. Ich habe (ich weiß leider nicht mehr genau woher) noch ein paar RAM Bausteine da. Einen 62256 (32KBx8) und mehrere UM61512-15 (64Kbx8). Beides habe ich mit dem TL866 schon getestet und es funktioniert. Also kann ich die Bausteine weiter verwenden. Somit macht es durchaus Sinn das RAM einfach komplett unter den Adressbereich zu legen und dann die anderen Bereiche (IO und ROM) zu überlagern. Evtl. kann man sogar später mal ROM Bereiche ausblenden.
 
 Auch das ROM gibt es in verschiedenen Varianten. Ich habe mir sowohl ein klassisches EEPROM mit 8Kx8 besorgt, wie auch ein NOR Flash mit 128KBx8. Das 2. ist dafür gedacht ROM Bereiche umschaltbar zu machen. D.h. ein Bereich Flash kann sowohl im Kernel ROM eingeblendet werden, ein andere dann als Interpreter ROM.
 
 Zur Zeit stell ich mir die Aufteilung so vor:
+
+## simple Variante
+
+| Bereich                     | Hi Address Nibble                       | Beschreibung                                                 |
+| --------------------------- | --------------------------------------- | ------------------------------------------------------------ |
+| 0xFFFF<br />...<br />0xC000 | 11xx xxxx                               | 16KB Kernel ROM, HiROM                                       |
+| 0xBFFF<br /><br />0xB000    | 1011 xxxx                               | IO Bereich aufgeteilt in 16 Bereiche für die Peripherie.<br />0xD300: CS3 #0011<br />0xD200: CS2 #0010<br />0xD100: ASIC 1 #0001<br />0xD000: VIA 1 #0000<br />CS2 und 3 gehen nur auf den "Bus"<br /> |
+| 0xAFFF<br />...<br />0x8000 | 1010 xxxx<br />1001 xxxx<br />1000 xxxx | 12k ext ROM, BASIC oder anderes ROM                          |
+| 0x7FFF<br />...<br />0x0200 | 0xxx xxxx                               | 31469 Bytes RAM (BaseRAM)                                    |
+| 0x01FF<br />...<br />0x0100 | 0xxx xxxx                               | 256 Bytes Stack                                              |
+| 0x00FF<br />...<br />0x0000 | 0xxx xxxx                               | 256 Bytes ZP RAM                                             |
+
+Für den Adressdecoder will ich einen ATF16V8B, also ein CPLD verwenden. Dadurch habe ich die Möglichkeit die Adressdekodierung variabel gestalten zu können. Da noch genügend Pins im CPLD vorhanden sind kann ich die unteren 4 IO Leitungen auch direkt dekodieren. Falls mehr gewünscht sind, kann man per CSIO einen weitern Dekodierer kaskadieren. (74HC138 o.ä.)
+
+Die Verknüpfung von PHI2 und RAM ist bereits enthalten. 
+Hier der Entwurf des PLDs: 
+
+```wpld
+header:
+Name     adr_simple ;
+PartNo   01 ;
+Date     24.07.2022 ;
+Revision 03 ;
+Designer wkla ;
+Company  nn ;
+Assembly None ;
+Location  ;
+Device   G16V8 ;
+
+pld:
+/* *************** INPUT PINS *********************/
+PIN [1..8]   =  [A15..A8]; 
+PIN 9   =  PHI2;
+
+/* *************** OUTPUT PINS *********************/
+PIN 12   =  CSRAM;
+PIN 13   =  CSHIROM;
+PIN 14   =  CSEXTROM;
+PIN 15   =  CSIO;
+PIN 16   =  CSIO3;
+PIN 17   =  CSIO2;
+PIN 18   =  CSIO1;
+PIN 19   =  CSIO0;
+/* *************** LOGIC *********************/
+
+FIELD Addr = [A15..A8];
+CSRAM_EQU = Addr:[0000..7FFF]; // 32KB
+IOPORT_EQU = Addr:[B000..BFFF]; // 4KB
+VIAPORT_EQU = Addr:[B000..B0FF];
+ACIAPORT_EQU = Addr:[B100..B1FF];
+CSIO2PORT_EQU = Addr:[B200..B2FF];
+CSIO3PORT_EQU = Addr:[B300..B3FF];
+CSEXTROM_EQU = Addr:[8000..AFFF]; // 12KB
+CSROM_EQU = Addr:[C000..FFFF];  // 16KB
+
+/* ZP */
+CSEXTROM = !CSEXTROM_EQU;
+
+/* RAM */
+CSRAM = !CSRAM_EQU # !PHI2;
+
+/* 8kb of ROM */
+CSHIROM = !CSROM_EQU;
+
+/* IO */
+CSIO= !IOPORT_EQU;
+CSIO0 = !VIAPORT_EQU;
+CSIO1 = !ACIAPORT_EQU;
+CSIO2 = !CSIO2PORT_EQU;
+CSIO3 = !CSIO3PORT_EQU;
+
+simulator:
+ORDER: A15, A14, A13, A12, A11, A10, A9, A8, PHI2, CSEXTROM, CSRAM, CSHIROM, CSIO, CSIO0, CSIO1, CSIO2, CSIO3; 
+
+VECTORS:
+/* internal RAM */
+0 X X X X X X X 0 H H H H H H H H 
+0 X X X X X X X 1 H L H H H H H H 
+
+/* 8000-AFFF external Rom */ 
+1 0 0 0 X X X X X L H H H H H H H 
+1 0 0 1 X X X X X L H H H H H H H 
+1 0 1 0 X X X X X L H H H H H H H 
+
+/* IO */ 
+/* CSIO0 */
+1 0 1 1 0 0 0 0 X H H H L L H H H 
+/* CSIO1 */
+1 0 1 1 0 0 0 1 X H H H L H L H H 
+/* CSIO2 */
+1 0 1 1 0 0 1 0 X H H H L H H L H 
+/* CSIO3 */
+1 0 1 1 0 0 1 1 X H H H L H H H L 
+/* nicht direkt benutzt */
+1 0 1 1 0 1 X X X H H H L H H H H 
+1 0 1 1 1 X X X X H H H L H H H H 
+/* ROM */
+1 1 X X X X X X X H H L H H H H H 
+
+```
+
+Das FOrmat ist wpld. Eine Erweiterung von pld von mir. Mit diesem kleinen Tool kann ich PLD und SI File in einer Datei bearbeiten. Das Tool generiert automatisch die erforderlichen Dateien (pld und si) aus dieser Quelle in einem eigenen Unterverzeichniss und startet dort dann CUPL.
+
+## C64 like
+
+Evtl. macht es somit Sinn ähnlich wie im 6510 (C64) die beiden unteren Bytes mit einem digitalen Ein/Ausgang zu besetzen. Damit könnte man sehr schnelle Anbindungen schreiben. z.B. SPI oder Taktumschaltung, oder auch ROM Selektion (dazu später mehr).
+
+Eine C64 ähnliche Aufteilung wäre das hier:
 | Bereich | Hi Adress | Beschreibung |
 |-|-|-|
 | 0xFFFF<br />...<br />0xE000 | 111x xxxx | 8KB Kernel ROM, HiROM |
@@ -175,11 +281,37 @@ VECTORS:
 
 # Der Bus
 
+## einfache Version
+
+Für die 1. Version muss es zunächst auch ein einfacher Bus tun. Ich habe mich für eine einfache 40-pol Stiftleiste entschieden.
+
+Darauf gibt es dann folgende Signale:
+
+| Pin    | Bez     | Pin    | Bez       |
+| ------ | ------- | ------ | --------- |
+| 1      | +5V     | 2      | +5V       |
+| 3      | /IRQ    | 4      | /RES      |
+| 5      | /NMI    | 6      | CLK       |
+| 7      | A0      | 8      | BE        |
+| 9      | A1      | 10     | /CSHiROM  |
+| 11     | A2      | 12     | /CSExtROM |
+| 13     | A3      | 14     | /CSIO     |
+| 15     | A4      | 16     | /CSIO2    |
+| 17     | A5      | 18     | /CSIO3    |
+| 19     | A6      | 20     | RDY       |
+| 21     | A7      | 22     | R/W       |
+| 23..37 | A8..A15 | 24..38 | D0..D7    |
+| 39     | GND     | 40     | GND       |
+
+Mit dem Bus kann man schnell mal das HiROM als Karte (z.B. mit ZIF Sockel oder mit ISP Möglichkeit) aufsetzen. Man kann später dann auch mal schnell ein ExtROM zufügen, oder noch eine VIA oder ACIA. Ein echter BUS ist das aber nicht.
+
+## spätere Version
+
 Der SBC soll später auf einer Backplane aufgesetzt werden können. Die Backplane übernimmt dann die Stromversorgung der verschiedenen Karten. Gerne hätte ich Edge Card Connectoren, wie sie auch im C64 Verwendung gefunden haben.  So braucht man für die Karten nur etwas Platinenplatz und keinen eigenen Connector. 
 
 ![sch_clock_reset](/images/edge_card_connector.png)
 
-## Aber welche Signale müssen auf den Bus?
+### Aber welche Signale müssen auf den Bus?
 
 Fangen wir mal mit dem Naheliegendsten an.
 
@@ -224,13 +356,13 @@ Werden alle 3 Bereiche (LoROM, HiRAM, LoRAM) genutzt, können 16KB zusammenhäng
 | 47     | n.n.     | 48     | n.n.     |
 | 49     | GND      | 50     | GND      |
 
-## Aber wofür?
+### Aber wofür?
 
-### CS2..CS5
+#### CS2..CS5
 
 Hier kann man per Karte eigene zus. Peripherie anbinden. So ist es damit schnell möglich eine zus. ASIC oder eine VIA ohne viel Aufwand dazu zu stecken.
 
-### HiROM, LoROM, HiRAM, LoRAM
+#### HiROM, LoROM, HiRAM, LoRAM
 
 Naja das ist ein moving Target. Ich bin mir noch nicht sicher, ob ich die Signale brauche.
 

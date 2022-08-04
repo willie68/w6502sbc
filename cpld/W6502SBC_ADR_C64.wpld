@@ -1,4 +1,5 @@
-Name     W6502SBC_ADR ;
+header:
+Name     W6502SBC_ADR_C64 ;
 PartNo   01 ;
 Date     20.07.2022 ;
 Revision 01 ;
@@ -8,6 +9,7 @@ Assembly None ;
 Location  ;
 Device   G16V8 ;
 
+pld:
 /* *************** INPUT PINS *********************/
 PIN 1   =  A12; 
 PIN 2   =  A13;
@@ -39,3 +41,23 @@ LORAM= !(A15 & !A14 & !A13 & !ALORAM);
 LOROM= !(A15 & !A14 & A13 & !ALOROM & NOLOROM);
 HIRAM= !(A15 & A14 & !A13 & !A12 & !AHIRAM);
 HIROM= !(A15 & A14 & A13 & !AHIROM);
+
+simulator:
+ORDER: A15, A14, A13, A12, ALORAM, AHIRAM, ALOROM, AHIROM, NOLOROM, PHI2, CSRAM, CSHIROM, CSLOROM, CSIO, LORAM, LOROM, HIRAM, HIROM; 
+
+VECTORS:
+0 X X X X X X X X 0 H H H H H H H H 
+0 X X X X X X X X 1 L H H H H H H H 
+1 0 0 X 1 X X X X 0 H H H H H H H H 
+1 0 0 X 1 X X X X 1 L H H H H H H H 
+1 0 0 X 0 X X X X X H H H H L H H H 
+1 0 1 X X X 1 X 1 X H H L H H H H H 
+1 0 1 X X X 0 X 1 X H H H H H L H H 
+1 0 1 X X X X X 0 0 H H H H H H H H 
+1 0 1 X X X X X 0 1 L H H H H H H H 
+1 1 0 0 X 1 X X X 0 H H H H H H H H 
+1 1 0 0 X 1 X X X 1 L H H H H H H H 
+1 1 0 0 X 0 X X X X H H H H H H L H 
+1 1 0 1 X X X X X X H H H L H H H H 
+1 1 1 X X X X 1 X X H L H H H H H H 
+1 1 1 X X X X 0 X X H H H H H H H L 
