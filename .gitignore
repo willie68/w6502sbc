@@ -10,3 +10,7 @@ software/wcupl/test/adr_simple.pld
 software/wcupl/test/adr_simple.si
 
 software/wcupl/wcupl.zip
+
+cpld/wcupl/
+
+software/wcupl/test/wcupl/

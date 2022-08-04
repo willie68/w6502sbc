@@ -12,7 +12,12 @@
             "program": "${workspaceFolder}/cmd/main.go",
             "cwd" : "${workspaceFolder}",
             "output": "debug",
-            "env": {"GRAYLOGHOST":"127.0.0.1", "GRAYLOGPORT": "12201"},
+            "env": {
+                "GRAYLOGHOST":"127.0.0.1", 
+                "GRAYLOGPORT": "12201",
+                "CUPL_HOME" : "H:\\Wincupl\\Shared",
+                "LIBCUPL" : "H:\\Wincupl\\Shared\\Atmel.dl",
+            },
             "args": [
                 "-jaxfsl",
                 "./test/adr_simple.wpld",

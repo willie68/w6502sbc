@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -34,8 +35,12 @@ func init() {
 
 func main() {
 	log.Println("start")
-	prg := os.Args[0]
-	prg = strings.TrimSuffix(prg, "wcupl.exe")
+
+	cuplHome, ok := os.LookupEnv("CUPL_HOME")
+	if !ok {
+		cuplHome = os.Args[0]
+		cuplHome = strings.TrimSuffix(cuplHome, "wcupl.exe")
+	}
 	args := os.Args[1:]
 	for _, arg := range args {
 		log.Println("arg: ", arg)
@@ -48,6 +53,16 @@ func main() {
 
 	log.Println("cupl args:", cuplargs)
 	log.Println("file     :", file)
+	workdir := filepath.Join(filepath.Dir(file), "wcupl")
+	err := os.Mkdir(workdir, os.ModePerm)
+	if err != nil && !os.IsExist(err) {
+		log.Fatalf("error creating temp dir: %v\n", err)
+	}
+	destfile := filepath.Join(workdir, filepath.Base(file))
+	file, err = copy(file, destfile)
+	if err != nil {
+		log.Fatalf("error copy source file: %v\n", err)
+	}
 
 	f, err := os.Open(file)
 	if err != nil {
@@ -107,8 +122,8 @@ func main() {
 	}
 
 	cuplargs = append(cuplargs, pldFile)
-	log.Println("starting cupl from ", prg)
-	cupl := filepath.Join(prg, "cupl.exe")
+	log.Println("starting cupl from ", cuplHome)
+	cupl := filepath.Join(cuplHome, "cupl.exe")
 	cmnd := exec.Command(cupl, cuplargs...)
 	var outb, errb bytes.Buffer
 	cmnd.Stdout = &outb
@@ -134,4 +149,19 @@ func WriteLines(path string, lines []string) error {
 		fmt.Fprintln(w, line)
 	}
 	return w.Flush()
+}
+
+func copy(src, dest string) (string, error) {
+	bytesRead, err := ioutil.ReadFile(src)
+
+	if err != nil {
+		return "", err
+	}
+
+	err = ioutil.WriteFile(dest, bytesRead, 0644)
+
+	if err != nil {
+		return "", err
+	}
+	return dest, nil
 }
