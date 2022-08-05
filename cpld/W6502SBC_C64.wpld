@@ -7,7 +7,7 @@ Designer wkla ;
 Company  nn ;
 Assembly None ;
 Location  ;
-Device   G16V8 ;
+Device   G16V8AS ;
 
 pld:
 /* *************** INPUT PINS *********************/
