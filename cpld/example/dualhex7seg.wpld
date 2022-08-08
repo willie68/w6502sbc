@@ -1,5 +1,4 @@
 header:
-
 Name     DualHex7Seg ;
 PartNo   1 ;
 Date     08.08.2022 ;
@@ -24,8 +23,8 @@ Device   G22V10 ;
   BI1 | 7     18 | Segment D
   BI2 | 8     17 | Segment F
   BI3 | 9     16 | Segment G
-  n.c | 10    15 | n.c
-  n.c | 11    14 | OEB
+  DPA | 10    15 | Segmant DP
+  DPB | 11    14 | OEB
   GND | 12    13 | n.c
       +----------+
 
@@ -44,19 +43,20 @@ PIN  6 = BIA;
 PIN  7 = BIB;
 PIN  8 = BIC;
 PIN  9 = BID;
-
+PIN 10 = DPA;
+PIN 11 = DPB;
 
 /* *************** OUTPUT PINS *********************/
-PIN     23=OEA ; 
-PIN     22=!E ;
-PIN     21=!B ;
-PIN     20=!C ;
-PIN     19=!A ;
-PIN     18=!D ;
-PIN     17=!F ;
-PIN     16=!G ;
-PIN     14=OEB ;
-
+PIN  23 = OEA ; 
+PIN  22 = !E ;
+PIN  21 = !B ;
+PIN  20 = !C ;
+PIN  19 = !A ;
+PIN  18 = !D ;
+PIN  17 = !F ;
+PIN  16 = !G ;
+PIN  14 = OEB ;
+PIN  15 = !DP;
 /* ************* Declarations **********************/
 
 FIELD AADD = [CLK,AID,AIC,AIB,AIA] ;
@@ -64,6 +64,7 @@ FIELD BADD = [CLK,BID,BIC,BIB,BIA] ;
 FIELD OUTPUT = [OEA,A,B,C,D,E,F,G,OEB] ;
 
 /********* EQUATIONS ****************/
+DP = (DPA & !CLK) # (DPB & CLK) ;
 
 /* 7-Segment A */
 TABLE AADD => OUTPUT {
@@ -87,7 +88,7 @@ TABLE AADD => OUTPUT {
 
 /* 7-Segment B */
 TABLE BADD => OUTPUT {
-'b'10000=>'b'111111100 ; /* 0 */  /* Second LED */
+'b'10000=>'b'111111100 ; /* 0 */
 'b'10001=>'b'101100000 ; /* 1 */
 'b'10010=>'b'111011010 ; /* 2 */
 'b'10011=>'b'111110010 ; /* 3 */
