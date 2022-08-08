@@ -1,5 +1,5 @@
 header:
-Name     7segDecoder ;
+Name     7segDecoder_ca ;
 PartNo   00 ;
 Date     8/6/2020 ;
 Revision 02 ;
@@ -39,13 +39,13 @@ PIN  5   =  I3;
 /* PIN 11   =  !ENABLE; */
 
 /* *************** OUTPUT PINS ******************** */
-PIN  19 = !A;
-PIN  18 = !B;
-PIN  17 = !C;
-PIN  16 = !D;
-PIN  15 = !E;
-PIN  14 = !F;
-PIN  13 = !G;
+PIN  19 = A;
+PIN  18 = B;
+PIN  17 = C;
+PIN  16 = D;
+PIN  15 = E;
+PIN  14 = F;
+PIN  13 = G;
 
 /* [A,B,C,D,E,F,G].oe = ENABLE; */
 
