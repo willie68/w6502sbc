@@ -1,8 +1,9 @@
 .format "bin"
 
+	.memory "fill", $E000, $2000, $ea
 	.org $E000
-	.memory "fill", $E000, $2000, $ff
-	VIA .equ $B000
+	IO .equ $B000
+	VIA .equ IO
 	VIA_ORB .equ VIA
 	VIA_ORA .equ VIA+1
 	VIA_DDRB .equ VIA+2
@@ -19,7 +20,7 @@
 	VIA_IFR .equ VIA+$D
 	VIA_IER .equ VIA+$E
 	VIA_IRA .equ VIA+$F
-	ACIA .equ $D100
+	ACIA .equ IO + $0100
 
 do_reset:	
 // setting up the 65C22 VIA
@@ -28,7 +29,6 @@ do_reset:
 	LDA #$AA
 	STA VIA_ORA
 blinkloop:
-    delay(250)
 	ROR
 	STA VIA_ORA
 	jmp blinkloop
