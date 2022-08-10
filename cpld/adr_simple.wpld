@@ -32,17 +32,16 @@ VIAPORT_EQU = Addr:[B000..B0FF];
 ACIAPORT_EQU = Addr:[B100..B1FF];
 CSIO2PORT_EQU = Addr:[B200..B2FF];
 CSIO3PORT_EQU = Addr:[B300..B3FF];
-CSEXTROM_EQU = Addr:[8000..AFFF]; // 12KB
-CSROM_EQU = Addr:[C000..FFFF];  // 16KB
 
-/* ZP */
-CSEXTROM = !CSEXTROM_EQU;
+/* 12KB of external ROM */
+CSEXTROM = ! (Addr:[8000..AFFF]); // 12KB
+/* 8kb of ROM */
+CSHIROM = ! (Addr:[C000..FFFF]);  // 16KB
+
 
 /* RAM */
 CSRAM = !CSRAM_EQU # !PHI2;
 
-/* 8kb of ROM */
-CSHIROM = !CSROM_EQU;
 
 /* IO */
 CSIO= !IOPORT_EQU;
