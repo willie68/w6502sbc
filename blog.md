@@ -370,7 +370,7 @@ Nun kommt zunächst der 6522 mit dran. Damit ich endlich auch mal ein kleines Pr
 
 # Sch#### Breadboards
 
-Leider ist mir beim Testen aufgefallen, dass es einige Adressverbindungen gibt, die nicht richtig kontakt haben. Also musste ich die gesamte Adressverkabellung neu machen. Das macht leider keinen Spaß. Deswegen geht's hier derzeit nicht weiter. 
+Leider ist mir beim Testen aufgefallen, dass es einige Adressverbindungen gibt, die keinen richtigen Kontakt haben. Also musste ich die gesamte Adressverkabellung neu machen. Das macht leider keinen Spaß. Deswegen geht's hier derzeit nicht weiter. 
 
 Dafür habe ich den ersten PCB Entwurf abgeschickt.
 
@@ -483,6 +483,71 @@ VECTORS:
 ```
 
 Das Format ist wpld. Eine Erweiterung von pld von mir. Mit diesem kleinen Tool kann ich PLD und SI File in einer Datei bearbeiten. Das Tool generiert automatisch die erforderlichen Dateien (pld und si) aus dieser Quelle in einem eigenen Unterverzeichnis und startet dort dann CUPL.
+
+# Neuaufbau
+
+Wie schon im letzten Blog geschrieben, war ein Breadboardaufbau buggy. Tatsächlich war nur eine Adressleitung (A14) nicht richtig verbunden, direkt am CPU Pin. Also hab ich das Breadboard hinten aufgemacht, die entsprechende Kontaktleiste raus genommen und mit der Zange wieder etwas mehr zusammen gebogen. Und siehe da, es funktioniert. Also habe ich den Aufbau nochmal neu machen müssen.
+
+ ![pcb_v1](./images/new_breadboard.jpg)
+
+Gleichzeitig hab ich auch mal einen Arduino Mega als Logicanalyser mit angeschlossen, ähnlich wie bei Ben Eater. Von ihm hab ich mir dann auch den Logic Code geklaut. Allerdings habe ich seine Clock nachgebaut. Ich verwende hier einen eigenen Pin vom Arduino, den ich als Clock dann in den SBC einspeise. So läuft alles schön syncron. Die Sourcen zum 6502 Monitor liegen im github unter `software/arduino/6502-clock` für die reine Clock und der Monitor mit Clock ist unter `software/arduino/6502-monitor` zu finden. Hier sieht man auch, das ich dsa RAM noch nicht eingebaut habe. 
+
+Nachdem ist einen Test mit einem $EA ROM, also ein ROM voller $EA, also quasi der NOP Generator im ROM, gemacht habe, habe ich ein kleines Programm geschrieben, was den Port A vom VIA benutzt um LEDs blinken zulassen.  Geschrieben ist das in VS Code mit dem RetroAssembler und dem passenden VS Plugin. Gebrannt mit meinem TL866 pro II.
+
+```asm
+.format "bin"
+
+  .memory "fill", $E000, $2000, $ea
+  .org $E000
+  IO .equ $B000
+  VIA .equ IO
+  VIA_ORB .equ VIA
+  VIA_ORA .equ VIA+1
+  VIA_DDRB .equ VIA+2
+  VIA_DDRA .equ VIA+3
+  VIA_T1Cl .equ VIA+4
+  VIA_T1CH .equ VIA+5
+  VIA_T1LL .equ VIA+6
+  VIA_T1LH .equ VIA+7
+  VIA_T2CL .equ VIA+8
+  VIA_T2CH .equ VIA+9
+  VIA_SR .equ VIA+$A
+  VIA_ACR .equ VIA+$B
+  VIA_PCR .equ VIA+$C
+  VIA_IFR .equ VIA+$D
+  VIA_IER .equ VIA+$E
+  VIA_IRA .equ VIA+$F
+  ACIA .equ IO + $0100
+
+do_reset:  
+// setting up the 65C22 VIA
+  LDA #$FF
+  STA VIA_DDRA
+  LDA #$AA
+  STA VIA_ORA
+
+blinkloop:
+  ROR
+  STA VIA_ORA
+  jmp blinkloop
+
+do_nmi: NOP
+        RTI
+   
+do_irq: NOP
+        RTI
+
+  .org  $FFFA
+  .word  do_nmi
+  .word  do_reset
+  .word  do_irq
+```
+
+Es funktioniert.
+
+![pcb_v1](./images/first_blink.gif)
+
+Im Terminal, das auf den Arduino eingestellt ist, sieht man dann schön wie der Prozessor die Befehle abarbeitet. Mission completet für Heute.
 
 # Terminal
 
