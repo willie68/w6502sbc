@@ -47,7 +47,7 @@ bool pulse;
 void loop() {
   digitalWrite(CLK, pulse);
   digitalWrite(LED_BUILTIN, pulse);
-  delay(150);
+  delay(50);
   pulse = !pulse;
 
 }
