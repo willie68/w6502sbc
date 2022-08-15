@@ -22,6 +22,7 @@
 	VIA_IRA .equ VIA+$F
 	ACIA .equ IOBASE + $0100
 
+	; ZEOR Page registers
 	JTIME .equ $A0 ; to $A2 three bytes jiffy time
 
 do_reset:
@@ -64,21 +65,46 @@ do_iobase:
 	ldy IOBASE >> 8 & $00ff
 	rts
 
+	; higher two bytes of the 3 bytes of the 1/50 secs of a day. 24h * 60m * 60s * 50, 4.320.000 ticks per day
+    jiffyday .equ $E1EB  
+
 do_settim:
+	sei
+	sta JTIME+2
+	stx JTIME+1
+	sty JTIME
+	cli
 	rts
 
 do_rdtim:
+	sei
+	lda JTIME+2
+	ldx JTIME+1
+	ldy JTIME
+	cli
 	rts
 
 do_udtim:
-	inc JTIME     ; increment Low-Byte 
-    bne jend          ; =0?
+	inc JTIME+2     ; increment Low-Byte 
+    bne jiend     ; =0?
     inc JTIME+1   ; ja, dann Überlauf 255->0 und High-Byte auch erhöhen
-    bne jend          ; =0?
-    inc JTIME+2   ; ja, dann Überlauf 255->0 und High-Byte auch erhöhen
-	; TODO on E1EB00 (4.320.000 ticks or 24 Hours) reset to null
-jend:
+    bne jtest     ; =0?
+    inc JTIME   ; ja, dann Überlauf 255->0 und High-Byte auch erhöhen
+jtest:
+	; test on E1EB00 (4.320.000 ticks or 24 Hours) reset to null
+	sec
+	lda JTIME+1 
+	sbc #<jiffyday 
+	lda JTIME
+	sbc #>jiffyday 
+	bcc jiend
+	; reset to null
+	lda #$00
+	sta JTIME +1
+	sta JTIME +2
+jiend:
 	rts
+
 
 do_nmi: NOP
 		RTI
