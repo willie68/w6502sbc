@@ -27,6 +27,10 @@
   RS = %00100000
 
 do_reset:
+  
+  ldx #$ff ;init stack pointer
+  txs 
+  
   lda #%11111111 ; Set all pins on port B to output
   sta VIA_DDRB
 
@@ -34,6 +38,24 @@ do_reset:
   sta VIA_DDRA
 
   lda #%00111000 ; Set 8-bit mode; 2-line display; 5x8 font
+  sta VIA_ORB
+  lda #0         ; Clear RS/RW/E bits
+  sta VIA_ORA
+  lda #E         ; Set E bit to send instruction
+  sta VIA_ORA
+  lda #0         ; Clear RS/RW/E bits
+  sta VIA_ORA
+
+  lda #%00000001 ; clear Display;
+  sta VIA_ORB
+  lda #0         ; Clear RS/RW/E bits
+  sta VIA_ORA
+  lda #E         ; Set E bit to send instruction
+  sta VIA_ORA
+  lda #0         ; Clear RS/RW/E bits
+  sta VIA_ORA
+
+  lda #%00000010 ; return home;
   sta VIA_ORB
   lda #0         ; Clear RS/RW/E bits
   sta VIA_ORA

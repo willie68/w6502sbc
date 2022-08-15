@@ -16,3 +16,6 @@ cpld/wcupl/
 software/wcupl/test/wcupl/
 
 cpld/example/wcupl/
+
+software/*/debug*.txt
+software/*/*.bin
