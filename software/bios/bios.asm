@@ -8,7 +8,7 @@
 	VIA_ORA .equ VIA+1
 	VIA_DDRB .equ VIA+2
 	VIA_DDRA .equ VIA+3
-	VIA_T1Cl .equ VIA+4
+	VIA_T1CL .equ VIA+4
 	VIA_T1CH .equ VIA+5
 	VIA_T1LL .equ VIA+6
 	VIA_T1LH .equ VIA+7
@@ -22,12 +22,33 @@
 	VIA_IRA .equ VIA+$F
 	ACIA .equ IOBASE + $0100
 
-	; ZEOR Page registers
+	;constants for board specifig
+	JIFFY_VIA_TIMER_LOAD .equ 20000   ; this is the value for 1MHZ / 50 ticks per second
+
+	; ZERO Page registers $0000.. $00ff
+	RAMTOP .equ $31 ; store the page of the last RAM ($30 is the low adress)
 	JTIME .equ $A0 ; to $A2 three bytes jiffy time
+
+	; Stack  $0100.. $01ff
+	SPAGE .equ $0100
+	; Bios data
+	BIOSPAGE .equ $0200
+	IRQ_SRV .equ  $0214    ;$0214 LOW byte, $0215 HIGH byte for a external irq service routine
+	NMI_SRV .equ  $0216    ;$0216 LOW byte, $0217 HIGH byte for a external nmi service routine
+	RTI_SRV .equ  $0218    ;every user irq or nmi routine should call this for returning, jmp (RTI_SRV)
+	; BASIC data
+	BASICPAGE .equ $0300
+	; RAM start
+	RAMSTART .equ $0400
 
 do_reset:
     ldx #$ff ; set the stack pointer 
    	txs 
+
+	jsr do_ioinit
+	jsr do_scinit
+	jsr do_ramtas
+	jsr do_srvinit
 
 // setting up the 65C22 VIA
 	LDA #$FF
@@ -52,9 +73,62 @@ do_scinit:
 	rts
 
 do_ioinit:
+    sei
+	; disable all interrupts
+	lda #$00
+  	sta VIA_IER  
+	; setting free run mode with interrupts enabled
+	lda #%01000000
+  	sta VIA_ACR     
+	lda #%11000000
+  	sta VIA_IER  ; enable interrupt for timer 1
+	; setting the vias timer 1 in free run mode, jiffy timer, load with 
+	lda #<JIFFY_VIA_TIMER_LOAD
+	sta VIA_T1LL 
+	lda #>JIFFY_VIA_TIMER_LOAD
+	sta VIA_T1LH 
+	cli
 	rts
 
-do_ramtas:
+do_ramtas: 
+	sei
+	lda #$00
+	tay
+	; clear memory on zeropage, stack, biospage, basicpage
+ramtas_l1:
+	sta $0000, y
+	sta SPAGE, y
+	sta BIOSPAGE, y
+	sta BASICPAGE, y
+	iny
+	bne ramtas_l1
+	; checking every page 0 byte to get the last RAM Page
+	tay
+	sta RAMTOP-1     ; put a 0 into $30 for later indirect acces to $30 $31 for RAM Test adress
+	lda >RAMSTART-1
+	sta RAMTOP
+ramtas_l2:
+	inc RAMTOP
+	lda #$55         ; test with 01010101
+	sta (RAMTOP), y
+	cmp (RAMTOP), y
+	bne ramtas_ramtop
+	rol				 ; test with 10101010
+	sta (RAMTOP), y
+	cmp (RAMTOP), y
+	bne ramtas_ramtop
+	jmp ramtas_l2
+ramtas_ramtop:
+	dec RAMTOP  ; found the last RAM page at adress one page before 
+	cli
+	rts
+
+do_srvinit:
+	; saving the isr return adress to kernel page
+	lda <isr_end
+	sta RTI_SRV
+	lda >isr_end
+	sta RTI_SRV+1
 	rts
 
 do_getin:
@@ -106,11 +180,42 @@ jiend:
 	rts
 
 
-do_nmi: NOP
-		RTI
+do_nmi: 
+	pha
+	phx
+	phy
+	; look if nmi service routine is set
+	lda #$00
+	cmp >NMI_SRV
+	beq nmi_end
+	jmp (NMI_SRV)
+nmi_end:
+	ply
+	plx
+	pla
+	rti
 	 
-do_irq: NOP
-		RTI
+do_irq: 
+	pha
+	phx
+	phy
+	; testing for timer 1, jiffy timer interrupt
+	bit VIA_IFR          ; Bit 6 copied to overflow flag
+  	bvc isr_no_timer1
+	lda VIA_T1CL         ; Clears the interrupt
+	jsr do_udtim
+isr_no_timer1:
+	; here do other isr stuff
+	; look if irq service routine is set
+	lda #$00
+	cmp >IRQ_SRV
+	beq isr_end
+	jmp (IRQ_SRV)
+isr_end:
+	ply
+	plx
+	pla
+	rti
 
 	.org $FF81 ; SCINIT Initialize "Screen output", (here only the serial monitor)
 	jmp do_scinit
