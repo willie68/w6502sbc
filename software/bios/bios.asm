@@ -28,14 +28,19 @@
 	; ZERO Page registers $0000.. $00ff
 	RAMTOP .equ $31 ; store the page of the last RAM ($30 is the low adress)
 	JTIME .equ $A0 ; to $A2 three bytes jiffy time
+	IN_READ .equ $80
+	IN_WRITE .equ $81
 
 	; Stack  $0100.. $01ff
 	SPAGE .equ $0100
 	; Bios data
 	BIOSPAGE .equ $0200
-	IRQ_SRV .equ  $0214    ;$0214 LOW byte, $0215 HIGH byte for a external irq service routine
-	NMI_SRV .equ  $0216    ;$0216 LOW byte, $0217 HIGH byte for a external nmi service routine
-	RTI_SRV .equ  $0218    ;every user irq or nmi routine should call this for returning, jmp (RTI_SRV)
+	IRQ_SRV .equ  $0214    ; $0214 LOW byte, $0215 HIGH byte for a external irq service routine
+	NMI_SRV .equ  $0216    ; $0216 LOW byte, $0217 HIGH byte for a external nmi service routine
+	RTI_SRV .equ  $0218    ; every user irq or nmi routine should call this for returning, jmp (RTI_SRV)
+	IN_BUF_LEN .equ $0F    ; length of input buffer
+	IN_BUFFER .equ $0280   ; 16 bytes of input buffer
+
 	; BASIC data
 	BASICPAGE .equ $0300
 	; RAM start
@@ -62,11 +67,13 @@ blinkloop:
 
 .macro delay(ms)
 			ldy #ms
-delayl2:	ldx #20
-delayl1: 	dex          ; (2 cycles)
-        	bne  delayl1   ; (3 cycles in loop, 2 cycles at end)
-        	dey          ; (2 cycles)
-        	bne  delayl2   ; (3 cycles in loop, 2 cycles at end)
+delayl2:	
+	ldx #20
+delayl1: 	
+	dex          ; (2 cycles)
+    bne  delayl1   ; (3 cycles in loop, 2 cycles at end)
+    dey          ; (2 cycles)
+    bne  delayl2   ; (3 cycles in loop, 2 cycles at end)
 .endmacro
 
 do_scinit:
@@ -75,8 +82,7 @@ do_scinit:
 do_ioinit:
     sei
 	; disable all interrupts
-	lda #$00
-  	sta VIA_IER  
+  	stz VIA_IER  
 	; setting free run mode with interrupts enabled
 	lda #%01000000
   	sta VIA_ACR     
@@ -123,6 +129,14 @@ ramtas_ramtop:
 	cli
 	rts
 
+do_restor:
+    jsr do_srvinit
+	stz IRQ_SRV
+	stz IRQ_SRV+1
+	stz NMI_SRV
+	stz NMI_SRV+1
+	rts
+
 do_srvinit:
 	; saving the isr return adress to kernel page
 	lda <isr_end
@@ -131,7 +145,32 @@ do_srvinit:
 	sta RTI_SRV+1
 	rts
 
+do_putin:
+	; adding something to the input ring buffer , its always overwriting
+	ldx IN_WRITE
+	sta IN_BUFFER, x
+	dec IN_WRITE
+	bpl putin_end  
+	ldx #IN_BUF_LEN
+	stx IN_WRITE
+putin_end:
+	rts
+
 do_getin:
+	; ring buffer to get a char
+	lda IN_READ
+	cmp IN_WRITE
+	bne getin_jmp1
+	lda #$00 ; this means nothing in the buffer
+	rts
+getin_jmp1:
+	tax
+	lda IN_BUFFER, x
+	dec IN_READ
+	bpl getin_end  
+	ldx #IN_BUF_LEN
+	stx IN_READ
+getin_end:
 	rts
 
 do_iobase:
@@ -173,9 +212,8 @@ jtest:
 	sbc #>jiffyday 
 	bcc jiend
 	; reset to null
-	lda #$00
-	sta JTIME +1
-	sta JTIME +2
+	stz JTIME +1
+	stz JTIME +2
 jiend:
 	rts
 
@@ -217,6 +255,8 @@ isr_end:
 	pla
 	rti
 
+end_of_kernel:
+
 	.org $FF81 ; SCINIT Initialize "Screen output", (here only the serial monitor)
 	jmp do_scinit
 	
@@ -225,6 +265,9 @@ isr_end:
 
 	.org $FF87 ; RAMTAS RAM test and search memory end
 	jmp do_ramtas
+
+	.org $FF8A ; RESTOR restore default kernel vectors
+	jmp do_restor 
 
 	.org $FFDB ; SETTIM Set the Jiffy Clock
 	jmp do_settim
