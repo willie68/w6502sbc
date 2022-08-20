@@ -767,6 +767,8 @@ Schnell noch meinen Arduino Mega Monitor/Clock verbunden (die Flachbandkabel am 
 
 Ich habe auch schon etwas weiter gemacht mit dem Kernel. Angelehnt an den C64 Kernal (Ja der schreibt sich so) habe ich einige Konzepte, die wohl noch aus der PET Zeit stammen gerne übernommen. Zum einen gibt es im letzten Bereich des ROM sowas ähnliches wie Sprungtabellen, um die Kernel Funktionen anzusprechen. Ist keine echte Sprungtabelle,  sondern ein Block mit einem JMP auf die jeweilige Routine. Und dann habe ich schon die Jiffy Clock implementiert. Und natürlich auch die Routinen für das LCD sind schon enthalten. Wenn das soweit läuft, werde ich mal versuchen das LCD im 4 Bit Modus zu betreiben. Der 8 Bit Modus verbraucht mir zu viele Portpins. Aber eines nach dem anderen. Jetzt erstmal freuen.
 
+Jetzt sieht das ganze schon nach einem SBC aus.
+
 # Terminal
 
 Da mein SBC ja weder über Tastatur noch Monitor verfügt muss eine andere Lösung her. Dazu verwende ich eine serielle Schnittstelle. Als Baustein verwende ich einen R65C51. Der entsprechende W65C51 ist leider derzeit nicht zu bekommen. Weiterhin hört man von größeren Problemen mit dem Chip. Um damit ein Terminal auf dem PC anzusprechen muss zusätzlich auch noch ein Seriell/USB Adapter her. Die gibt es zum Glück mannigfach. 
