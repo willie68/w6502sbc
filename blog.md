@@ -755,6 +755,18 @@ do_irq: NOP
 
 Da noch kein RAM im Rechner ist, kann man natürlich nicht mit Subroutinen arbeiten. Denn ein JSR braucht den Stack und der Stack braucht das RAM.
 
+# Breadboard, die 2.
+
+Und schon wieder will das Breadboard nicht. Diesmal der Pin D7 an der CPU. Da mittlerweile aber die Platinen der V1 gekommen sind, habe ich die mal schnell bestückt. 
+
+![pcb_v1](./images/pcb_v1.jpg)
+
+Ich musste allerdings noch 2 Probleme in der Platine beseitigen. Einmal fehlte in der Stromversorgung ein Kontakt, da hat das Layoutprogramm einfach eine Verbindung nicht erstellt. Optisch da, aber tatsächlich nicht verbunden. Aber keine echtes Problem. Einfach mit einem kleinen Drahtstück an der LED überbrückt. Und einmal fehlte dem Flashsockel noch eine +5V Verbindung, damit man auch eine 8KB EEPROM einsetzen kann. Auch hier ein kleines Stückchen Draht, fertig.
+
+Schnell noch meinen Arduino Mega Monitor/Clock verbunden (die Flachbandkabel am Bus) und das LCD angeschlossen und siehe da, es läuft. Als nächstes kommt der ZIF Sockel Bus Adapter für das EEPROM. Dann braucht man nicht immer das EEPROM aus dem Sockel puhlen. 
+
+Ich habe auch schon etwas weiter gemacht mit dem Kernel. Angelehnt an den C64 Kernal (Ja der schreibt sich so) habe ich einige Konzepte, die wohl noch aus der PET Zeit stammen gerne übernommen. Zum einen gibt es im letzten Bereich des ROM sowas ähnliches wie Sprungtabellen, um die Kernel Funktionen anzusprechen. Ist keine echte Sprungtabelle,  sondern ein Block mit einem JMP auf die jeweilige Routine. Und dann habe ich schon die Jiffy Clock implementiert. Und natürlich auch die Routinen für das LCD sind schon enthalten. Wenn das soweit läuft, werde ich mal versuchen das LCD im 4 Bit Modus zu betreiben. Der 8 Bit Modus verbraucht mir zu viele Portpins. Aber eines nach dem anderen. Jetzt erstmal freuen.
+
 # Terminal
 
 Da mein SBC ja weder über Tastatur noch Monitor verfügt muss eine andere Lösung her. Dazu verwende ich eine serielle Schnittstelle. Als Baustein verwende ich einen R65C51. Der entsprechende W65C51 ist leider derzeit nicht zu bekommen. Weiterhin hört man von größeren Problemen mit dem Chip. Um damit ein Terminal auf dem PC anzusprechen muss zusätzlich auch noch ein Seriell/USB Adapter her. Die gibt es zum Glück mannigfach. 
