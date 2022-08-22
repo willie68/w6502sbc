@@ -1,9 +1,10 @@
-	VIA .equ $B000
+	IOBASE .equ $B000
+	VIA .equ IOBASE
 	VIA_ORB .equ VIA
 	VIA_ORA .equ VIA+1
 	VIA_DDRB .equ VIA+2
 	VIA_DDRA .equ VIA+3
-	VIA_T1Cl .equ VIA+4
+	VIA_T1CL .equ VIA+4
 	VIA_T1CH .equ VIA+5
 	VIA_T1LL .equ VIA+6
 	VIA_T1LH .equ VIA+7
@@ -15,4 +16,4 @@
 	VIA_IFR .equ VIA+$D
 	VIA_IER .equ VIA+$E
 	VIA_IRA .equ VIA+$F
-	ACIA .equ $D100
+	ACIA .equ IOBASE + $0100

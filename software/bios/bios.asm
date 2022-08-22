@@ -1,50 +1,33 @@
 .format "bin"
+.target "65C02"
 
-	.memory "fill", $E000, $2000, $ea
-	.org $E000
-	IOBASE .equ $B000
-	VIA .equ IOBASE
-	VIA_ORB .equ VIA
-	VIA_ORA .equ VIA+1
-	VIA_DDRB .equ VIA+2
-	VIA_DDRA .equ VIA+3
-	VIA_T1CL .equ VIA+4
-	VIA_T1CH .equ VIA+5
-	VIA_T1LL .equ VIA+6
-	VIA_T1LH .equ VIA+7
-	VIA_T2CL .equ VIA+8
-	VIA_T2CH .equ VIA+9
-	VIA_SR .equ VIA+$A
-	VIA_ACR .equ VIA+$B
-	VIA_PCR .equ VIA+$C
-	VIA_IFR .equ VIA+$D
-	VIA_IER .equ VIA+$E
-	VIA_IRA .equ VIA+$F
-	ACIA .equ IOBASE + $0100
+.memory "fill", $E000, $2000, $ea
+.org $E000
+.include "io.asm" 
 
-	;constants for board specifig
-	JIFFY_VIA_TIMER_LOAD .equ 20000   ; this is the value for 1MHZ / 50 ticks per second
+;constants for board specifig
+JIFFY_VIA_TIMER_LOAD .equ 20000   ; this is the value for 1MHZ / 50 ticks per second
 
-	; ZERO Page registers $0000.. $00ff
-	RAMTOP .equ $31 ; store the page of the last RAM ($30 is the low adress)
-	JTIME .equ $A0 ; to $A2 three bytes jiffy time
-	IN_READ .equ $80
-	IN_WRITE .equ $81
+; ZERO Page registers $0000.. $00ff
+RAMTOP .equ $31 ; store the page of the last RAM ($30 is the low adress)
+JTIME .equ $A0 ; to $A2 three bytes jiffy time
+IN_READ .equ $80
+IN_WRITE .equ $81
 
-	; Stack  $0100.. $01ff
-	SPAGE .equ $0100
-	; Bios data
-	BIOSPAGE .equ $0200
-	IRQ_SRV .equ  $0214    ; $0214 LOW byte, $0215 HIGH byte for a external irq service routine
-	NMI_SRV .equ  $0216    ; $0216 LOW byte, $0217 HIGH byte for a external nmi service routine
-	RTI_SRV .equ  $0218    ; every user irq or nmi routine should call this for returning, jmp (RTI_SRV)
-	IN_BUF_LEN .equ $0F    ; length of input buffer
-	IN_BUFFER .equ $0280   ; 16 bytes of input buffer
+; Stack  $0100.. $01ff
+SPAGE .equ $0100
+; Bios data
+BIOSPAGE .equ $0200
+IRQ_SRV .equ  $0214    ; $0214 LOW byte, $0215 HIGH byte for a external irq service routine
+NMI_SRV .equ  $0216    ; $0216 LOW byte, $0217 HIGH byte for a external nmi service routine
+RTI_SRV .equ  $0218    ; every user irq or nmi routine should call this for returning, jmp (RTI_SRV)
+IN_BUF_LEN .equ $0F    ; length of input buffer
+IN_BUFFER .equ $0280   ; 16 bytes of input buffer
 
-	; BASIC data
-	BASICPAGE .equ $0300
-	; RAM start
-	RAMSTART .equ $0400
+; BASIC data
+BASICPAGE .equ $0300
+; RAM start
+RAMSTART .equ $0400
 
 do_reset:
     ldx #$ff ; set the stack pointer 

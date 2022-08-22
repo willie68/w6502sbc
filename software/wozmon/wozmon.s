@@ -1,3 +1,5 @@
+.format "bin"
+.target "65C02"
 ;  The WOZ Monitor for the Apple 1
 ;  Written by Steve Wozniak in 1976
 
@@ -23,7 +25,6 @@ DSP             = $D012         ;  PIA.B display output register
 DSPCR           = $D013         ;  PIA.B display control register
 
                .org $FF00
-               .export RESET
 
 RESET:          CLD             ; Clear decimal arithmetic mode.
                 CLI
@@ -38,7 +39,7 @@ NOTCR:          CMP #'_'+$80    ; "_"?
                 BEQ ESCAPE      ; Yes.
                 INY             ; Advance text index.
                 BPL NEXTCHAR    ; Auto ESC if > 127.
-ESCAPE:         LDA #'\'+$80    ; "\".
+ESCAPE:         LDA #'\\'+$80    ; "\".
                 JSR ECHO        ; Output it.
 GETLINE:        LDA #$8D        ; CR.
                 JSR ECHO        ; Output it.
@@ -152,9 +153,13 @@ ECHO:           BIT DSP         ; bit (B7) cleared yet?
 
                 BRK             ; unused
                 BRK             ; unused
+NMI:
+IRQ:
+    RTI
 
 ; Interrupt Vectors
 
-                .WORD $0F00     ; NMI
-                .WORD RESET     ; RESET
-                .WORD $0000     ; BRK/IRQ
+	.org  $FFFA
+	.word   NMI
+	.word   RESET
+	.word   IRQ

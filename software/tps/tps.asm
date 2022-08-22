@@ -1,8 +1,10 @@
 .format "bin"
-.include "../include/io.asm"
+.target "65C02"
+
+.include "io.asm"
 // for the input and outputs of the TPS we will take port B
-	.org $E000
-	.memory "fill", $E000, $2000, $ff
+.org $E000
+.memory "fill", $E000, $2000, $ff
 
 do_reset:	
 // setting up the 65C22 VIA

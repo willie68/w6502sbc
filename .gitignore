@@ -19,3 +19,5 @@ cpld/example/wcupl/
 
 software/*/debug*.txt
 software/*/*.bin
+
+*.bin
