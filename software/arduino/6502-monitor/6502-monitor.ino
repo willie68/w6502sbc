@@ -1,3 +1,5 @@
+#include <avdweb_Switch.h>
+
 //A0..A15
 //const char ADDR[] = {22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52};
 //D0..D7
@@ -12,6 +14,10 @@ const char DATA[] = {53, 51, 49, 47, 45, 43, 41, 39};
 #define READ_WRITE 3
 #define CLK 4
 #define DT 50
+#define PRG 9
+#define AUTO 8
+#define SPD 0
+Switch prgBtn = Switch(PRG); // GPIO 4
 
 void setup() {
   for (int n = 0; n < 16; n += 1) {
@@ -24,6 +30,9 @@ void setup() {
   pinMode(READ_WRITE, INPUT);
   pinMode(CLK, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
+
+  pinMode(PRG, INPUT_PULLUP);
+  pinMode(AUTO, INPUT_PULLUP);
 
   attachInterrupt(digitalPinToInterrupt(CLOCK), onClock, RISING);
 
@@ -53,10 +62,20 @@ void onClock() {
   Serial.println(output);
 }
 bool pulse;
-void loop() {
-  digitalWrite(CLK, pulse);
-  digitalWrite(LED_BUILTIN, pulse);
-  delay(DT);
-  pulse = !pulse;
+word speed;
+bool autoclk;
 
+void loop() {
+  autoclk = digitalRead(AUTO);
+  if (!autoclk) {
+    prgBtn.poll();
+  }
+
+  if (autoclk || prgBtn.switched()) {
+    digitalWrite(CLK, pulse);
+    digitalWrite(LED_BUILTIN, pulse);
+    speed = map(analogRead(SPD), 0, 1024, 0, 200);
+    delay(speed);
+    pulse = !pulse;
+  }
 }

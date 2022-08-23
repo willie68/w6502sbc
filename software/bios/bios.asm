@@ -18,7 +18,7 @@ RAMTOP .equ $31 ; store the page of the last RAM ($30 is the low adress)
 JTIME .equ $A0 ; to $A2 three bytes jiffy time
 IN_READ .equ $80
 IN_WRITE .equ $81
-
+TEMP_VEC .equ $32 ; store a temporary vector, like the address to the string to output, $32 low, $33 hi
 ; Stack  $0100.. $01ff
 SPAGE .equ $0100
 ; Bios data
@@ -43,29 +43,36 @@ do_reset:
 	jsr do_scinit
 
 	lcd_clear();
-	msg_w6502sbc: .asciiz "W6502SBC RAMTAS"
-	lcd_output (msg_w6502sbc, ramtas)
+	lda #>msg_w6502sbc
+	ldx #<msg_w6502sbc
+	jsr do_strout
 
-ramtas: 
-	jsr do_ramtas
+;ramtas: 
+;	lcd_clear();
+;	lda #>msg_ramtas
+;	ldx #<msg_ramtas
+;	jsr do_strout
+;	jsr do_ramtas
 
+;srvinit: 
 	lcd_clear();
-	msg_ramtas: .asciiz "W6502SBC RAMTAS"
-	lcd_output (msg_ramtas, srvinit)
-
-srvinit: 
-	lcd_clear();
-	msg_srvinit: .asciiz "W6502SBC SRV INIT"
-	lcd_output (msg_srvinit, ready)
+	lda #>msg_srvinit
+	ldx #<msg_srvinit
+	jsr do_strout
 	jsr do_srvinit
 
-ready:
+;ready:
 	lcd_clear();
-	msg_ready: .asciiz "W6502SBC ready:"
-	lcd_output (msg_ready, main_loop)
+	lda #>msg_ready
+	ldx #<msg_ready
+	jsr do_strout
+	jsr lcd_secondrow
+	lda #>msg_britta
+	ldx #<msg_britta
+	jsr do_strout
 
-main_loop:
 	cli
+main_loop:
 	jmp main_loop
 
 .macro lcd_clear()
@@ -119,7 +126,6 @@ do_ioinit:
 	rts
 
 do_ramtas: 
-	sei
 	lda #$00
 	tay
 	; clear memory on zeropage, stack, biospage, basicpage
@@ -148,7 +154,6 @@ ramtas_l2:
 	jmp ramtas_l2
 ramtas_ramtop:
 	dec RAMTOP  ; found the last RAM page at adress one page before 
-	cli
 	rts
 
 do_restor:
@@ -270,6 +275,23 @@ lcd_instruction:
   lda #0         ; Clear RS/RW/E bits
   sta VIA_ORA
   rts
+lcd_secondrow:
+  jsr lcd_wait
+  lda #%10000000 + $40
+  jsr lcd_instruction
+  rts
+do_strout:
+    stx TEMP_VEC
+	sta TEMP_VEC+1
+  	ldy #0
+strprint:
+  	lda (TEMP_VEC),y
+  	beq strreturn
+  	jsr do_chrout
+  	iny
+  	jmp strprint
+strreturn:
+	rts
 
 do_chrout:
   jsr lcd_wait
@@ -320,7 +342,16 @@ isr_end:
 	pla
 	rti
 
+; Messages
+msg_w6502sbc: .asciiz "W6502SBC Welcome"
+msg_ramtas: .asciiz "W6502SBC RAMTAS"
+msg_srvinit: .asciiz "W6502SBC SRV INIT"
+msg_ready: .asciiz "W6502SBC ready:"
+msg_britta: .asciiz "Hallo Britta"
 end_of_kernel:
+
+	.org $FF00 ; STROUT output string, A = high, X = low
+	jmp do_strout
 
 	.org $FF81 ; SCINIT Initialize "Screen output", (here only the serial monitor)
 	jmp do_scinit
