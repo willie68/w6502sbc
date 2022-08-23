@@ -1,15 +1,13 @@
 .format "bin"
 .target "65C02"
 
-	.memory "fill", $E000, $2000, $ea
-	.org $E000
-  .include "io.asm" 
+.memory "fill", $E000, $2000, $ea
+.org $E000
+.include "io.asm" 
 	
 	E  = %10000000
 	RW = %01000000
 	RS = %00100000
-
-  .org $8000
 
 do_reset:
   ldx #$ff ;init stack pointer
@@ -26,9 +24,9 @@ do_reset:
   jsr lcd_instruction
   lda #%00000110 ; Increment and shift cursor; don't shift display
   jsr lcd_instruction
-  lda #$00000001 ; Clear display
-  jsr lcd_instruction
   lda #$00000010 ; Return home
+  jsr lcd_instruction
+  lda #$00000001 ; Clear display
   jsr lcd_instruction
 
   ldx #0
@@ -42,7 +40,7 @@ print:
 main_loop:
   jmp main_loop
 
-message: .asciiz "Hello, world!"
+message: .asciiz "Hello, willie!"
 
 lcd_wait:
   pha

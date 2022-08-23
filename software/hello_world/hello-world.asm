@@ -128,7 +128,12 @@ do_reset:
   lda #RS         ; Clear E bits
   sta VIA_ORA
 
-  lda #"w"
+  lda #$55
+  sta $04
+  cmp $04
+  beq ok
+
+  lda #"n"
   sta VIA_ORB
   lda #RS         ; Set RS; Clear RW/E bits
   sta VIA_ORA
@@ -137,6 +142,7 @@ do_reset:
   lda #RS         ; Clear E bits
   sta VIA_ORA
 
+ok:
   lda #"o"
   sta VIA_ORB
   lda #RS         ; Set RS; Clear RW/E bits
@@ -146,7 +152,7 @@ do_reset:
   lda #RS         ; Clear E bits
   sta VIA_ORA
 
-  lda #"r"
+  lda #"k"
   sta VIA_ORB
   lda #RS         ; Set RS; Clear RW/E bits
   sta VIA_ORA
@@ -154,34 +160,7 @@ do_reset:
   sta VIA_ORA
   lda #RS         ; Clear E bits
   sta VIA_ORA
-
-  lda #"l"
-  sta VIA_ORB
-  lda #RS         ; Set RS; Clear RW/E bits
-  sta VIA_ORA
-  lda #(RS | E)   ; Set E bit to send instruction
-  sta VIA_ORA
-  lda #RS         ; Clear E bits
-  sta VIA_ORA
-
-  lda #"d"
-  sta VIA_ORB
-  lda #RS         ; Set RS; Clear RW/E bits
-  sta VIA_ORA
-  lda #(RS | E)   ; Set E bit to send instruction
-  sta VIA_ORA
-  lda #RS         ; Clear E bits
-  sta VIA_ORA
-
-  lda #"!"
-  sta VIA_ORB
-  lda #RS         ; Set RS; Clear RW/E bits
-  sta VIA_ORA
-  lda #(RS | E)   ; Set E bit to send instruction
-  sta VIA_ORA
-  lda #RS         ; Clear E bits
-  sta VIA_ORA
-
+  
 main_loop:
   jmp main_loop
 

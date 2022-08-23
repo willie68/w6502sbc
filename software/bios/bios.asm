@@ -7,6 +7,11 @@
 
 ;constants for board specifig
 JIFFY_VIA_TIMER_LOAD .equ 20000   ; this is the value for 1MHZ / 50 ticks per second
+; constants for LCD
+LCD_E  .equ %10000000
+LCD_RW .equ %01000000
+LCD_RS .equ %00100000
+
 
 ; ZERO Page registers $0000.. $00ff
 RAMTOP .equ $31 ; store the page of the last RAM ($30 is the low adress)
@@ -30,36 +35,70 @@ BASICPAGE .equ $0300
 RAMSTART .equ $0400
 
 do_reset:
+	sei
     ldx #$ff ; set the stack pointer 
    	txs 
 
-	jsr do_ioinit
+	;jsr do_ioinit
 	jsr do_scinit
+
+	lcd_clear();
+	msg_w6502sbc: .asciiz "W6502SBC RAMTAS"
+	lcd_output (msg_w6502sbc, ramtas)
+
+ramtas: 
 	jsr do_ramtas
+
+	lcd_clear();
+	msg_ramtas: .asciiz "W6502SBC RAMTAS"
+	lcd_output (msg_ramtas, srvinit)
+
+srvinit: 
+	lcd_clear();
+	msg_srvinit: .asciiz "W6502SBC SRV INIT"
+	lcd_output (msg_srvinit, ready)
 	jsr do_srvinit
 
-// setting up the 65C22 VIA
-	LDA #$FF
-	STA VIA_DDRA
-	LDA #$AA
-	STA VIA_ORA
-blinkloop:
-	ROR
-	STA VIA_ORA
-	jmp blinkloop
+ready:
+	lcd_clear();
+	msg_ready: .asciiz "W6502SBC ready:"
+	lcd_output (msg_ready, main_loop)
 
-.macro delay(ms)
-			ldy #ms
-delayl2:	
-	ldx #20
-delayl1: 	
-	dex          ; (2 cycles)
-    bne  delayl1   ; (3 cycles in loop, 2 cycles at end)
-    dey          ; (2 cycles)
-    bne  delayl2   ; (3 cycles in loop, 2 cycles at end)
+main_loop:
+	cli
+	jmp main_loop
+
+.macro lcd_clear()
+	lda #$00000001 ; Clear display
+  	jsr lcd_instruction
+.endmacro
+
+.macro lcd_output (msg, return)
+  ldx #0
+print:
+  lda msg,x
+  beq return
+  jsr do_chrout
+  inx
+  jmp print
 .endmacro
 
 do_scinit:
+	lda #%11111111 ; Set all pins on port B to output
+  	sta VIA_DDRB
+  	lda #%11100000 ; Set top 3 pins on port A to output
+  	sta VIA_DDRA
+
+  	lda #%00111000 ; Set 8-bit mode; 2-line display; 5x8 font
+  	jsr lcd_instruction
+  	lda #%00001110 ; Display on; cursor on; blink off
+  	jsr lcd_instruction
+  	lda #%00000110 ; Increment and shift cursor; don't shift display
+  	jsr lcd_instruction
+  	lda #$00000010 ; Return home
+  	jsr lcd_instruction
+  	lda #$00000001 ; Clear display
+  	jsr lcd_instruction
 	rts
 
 do_ioinit:
@@ -200,6 +239,49 @@ jtest:
 jiend:
 	rts
 
+// Display routines
+lcd_wait:
+  pha
+  lda #%00000000  ; Port B is input
+  sta VIA_DDRB
+lcdbusy:
+  lda #LCD_RW
+  sta VIA_ORA
+  lda #(LCD_RW | LCD_E)
+  sta VIA_ORA
+  lda VIA_ORB
+  and #%10000000
+  bne lcdbusy
+
+  lda #LCD_RW
+  sta VIA_ORA
+  lda #%11111111  ; Port B is output
+  sta VIA_DDRB
+  pla
+  rts
+
+lcd_instruction:
+  jsr lcd_wait
+  sta VIA_ORB
+  lda #0         ; Clear RS/RW/E bits
+  sta VIA_ORA
+  lda #LCD_E         ; Set E bit to send instruction
+  sta VIA_ORA
+  lda #0         ; Clear RS/RW/E bits
+  sta VIA_ORA
+  rts
+
+do_chrout:
+  jsr lcd_wait
+  sta VIA_ORB
+  lda #LCD_RS         ; Set RS; Clear RW/E bits
+  sta VIA_ORA
+  lda #(LCD_RS | LCD_E)   ; Set E bit to send instruction
+  sta VIA_ORA
+  lda #LCD_RS         ; Clear E bits
+  sta VIA_ORA
+  rts
+
 
 do_nmi: 
 	pha
@@ -251,6 +333,9 @@ end_of_kernel:
 
 	.org $FF8A ; RESTOR restore default kernel vectors
 	jmp do_restor 
+
+	.org $FFD2 ; CHROUT Output an character
+	jmp do_chrout
 
 	.org $FFDB ; SETTIM Set the Jiffy Clock
 	jmp do_settim
