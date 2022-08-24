@@ -41,54 +41,34 @@ do_reset:
 
 	;jsr do_ioinit
 	jsr do_scinit
-
-	lcd_clear();
-	lda #>msg_w6502sbc
-	ldx #<msg_w6502sbc
-	jsr do_strout
+	jsr lcd_clear
+	msg_out(message_w6502sbc)
+;	lda #msg_w6502sbc
+;	jsr do_msgout
 
 ;ramtas: 
-;	lcd_clear();
-;	lda #>msg_ramtas
-;	ldx #<msg_ramtas
-;	jsr do_strout
+;	jsr lcd_clear
+;	lda #msg_ramtas
+;	jsr do_msgout
 ;	jsr do_ramtas
 
 ;srvinit: 
-	lcd_clear();
-	lda #>msg_srvinit
-	ldx #<msg_srvinit
-	jsr do_strout
+	jsr lcd_clear
+	lda #msg_srvinit
+	jsr do_msgout
 	jsr do_srvinit
 
 ;ready:
-	lcd_clear();
-	lda #>msg_ready
-	ldx #<msg_ready
-	jsr do_strout
+	jsr lcd_clear
+	lda #msg_ready
+	jsr do_msgout
 	jsr lcd_secondrow
-	lda #>msg_britta
-	ldx #<msg_britta
-	jsr do_strout
+	lda #msg_britta
+	jsr do_msgout
 
 	cli
 main_loop:
 	jmp main_loop
-
-.macro lcd_clear()
-	lda #$00000001 ; Clear display
-  	jsr lcd_instruction
-.endmacro
-
-.macro lcd_output (msg, return)
-  ldx #0
-print:
-  lda msg,x
-  beq return
-  jsr do_chrout
-  inx
-  jmp print
-.endmacro
 
 do_scinit:
 	lda #%11111111 ; Set all pins on port B to output
@@ -280,6 +260,24 @@ lcd_secondrow:
   lda #%10000000 + $40
   jsr lcd_instruction
   rts
+lcd_home:
+	jsr lcd_wait
+	lda #%10000000 + $00
+	jmp lcd_instruction
+lcd_clear:
+	jsr lcd_wait
+	lda #$00000001 ; Clear display
+  	jmp lcd_instruction
+do_msgout:
+	asl   			; *2
+	tay	  			; ins y Register
+	lda messages,y	; lade lo addresse der msg
+	sta TEMP_VEC	; in den lo str vector
+	iny				; y erhöhen
+	lda messages,y	; lade hi addresse der msg
+	sta TEMP_VEC+1	; in den hi str vector
+	ldy #0			; y = 0 
+	jmp strprint	; string ausgeben
 do_strout:
     stx TEMP_VEC
 	sta TEMP_VEC+1
@@ -342,12 +340,24 @@ isr_end:
 	pla
 	rti
 
+
 ; Messages
-msg_w6502sbc: .asciiz "W6502SBC Welcome"
-msg_ramtas: .asciiz "W6502SBC RAMTAS"
-msg_srvinit: .asciiz "W6502SBC SRV INIT"
-msg_ready: .asciiz "W6502SBC ready:"
-msg_britta: .asciiz "Hallo Britta"
+	.org $FD00
+messages:
+msg_w6502sbc .equ 0
+msg_ramtas .equ 1
+msg_srvinit .equ 2
+msg_ready .equ 3
+msg_britta .equ 4
+	.word message_w6502sbc, message_ramtas
+	.word message_srvinit, message_ready
+	.word message_britta
+message_w6502sbc: .asciiz "W6502SBC Welcome"
+message_ramtas: .asciiz "W6502SBC RAMTAS"
+message_srvinit: .asciiz "W6502SBC SRV INIT"
+message_ready: .asciiz "W6502SBC ready:"
+message_britta: .asciiz "Hallo Britta"
+
 end_of_kernel:
 
 	.org $FF00 ; STROUT output string, A = high, X = low
@@ -387,3 +397,9 @@ end_of_kernel:
 	.word   do_nmi
 	.word   do_reset
 	.word   do_irq
+
+.macro msg_out(msg)
+	lda #>msg
+	ldx #<msg
+	jsr do_strout 
+.endmacro
