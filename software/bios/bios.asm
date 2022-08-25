@@ -5,6 +5,7 @@
 .org $E000
 .include "io.asm" 
 
+;----- constant definitions -----
 ;constants for board specifig
 JIFFY_VIA_TIMER_LOAD .equ 20000   ; this is the value for 1MHZ / 50 ticks per second
 ; constants for LCD
@@ -14,8 +15,10 @@ LCD_RS .equ %00100000
 
 
 ; ZERO Page registers $0000.. $00ff
-RAMTOP .equ $31 ; store the page of the last RAM ($30 is the low adress)
-JTIME .equ $A0 ; to $A2 three bytes jiffy time
+RAMTOP .equ $30 ; store the page of the last RAM ($30 is the low adress)
+
+JTIME .equ $A0 ; to $A2 three bytes jiffy time, higher two bytes of the 3 bytes of the 1/50 secs of a day. 24h * 60m * 60s * 50, 4.320.000 ticks per day
+
 IN_READ .equ $80
 IN_WRITE .equ $81
 TEMP_VEC .equ $32 ; store a temporary vector, like the address to the string to output, $32 low, $33 hi
@@ -25,16 +28,23 @@ SPAGE .equ $0100
 BIOSPAGE .equ $0200
 IRQ_SRV .equ  $0214    ; $0214 LOW byte, $0215 HIGH byte for a external irq service routine
 NMI_SRV .equ  $0216    ; $0216 LOW byte, $0217 HIGH byte for a external nmi service routine
-RTI_SRV .equ  $0218    ; every user irq or nmi routine should call this for returning, jmp (RTI_SRV)
+RTI_SRV .equ  $0218    ; every user irq or nmi routine should call this for returning from interrupt, jmp (RTI_SRV)
 IN_BUF_LEN .equ $0F    ; length of input buffer
 IN_BUFFER .equ $0280   ; 16 bytes of input buffer
 
 ; BASIC data
 BASICPAGE .equ $0300
-; RAM start
+; RAM start for testing
 RAMSTART .equ $0400
 
-do_reset:
+;----- macros -----
+.macro msg_out(msg)
+	lda #>msg
+	ldx #<msg
+	jsr do_strout 
+.endmacro
+;----- bios code -----
+do_reset: ; bios reset routine 
 	sei
     ldx #$ff ; set the stack pointer 
    	txs 
@@ -44,17 +54,15 @@ do_reset:
 	jsr lcd_clear
 	msg_out(message_w6502sbc)
 
-;ramtas: 
 ;	jsr lcd_clear
 ;	msg_out(message_ramtas)
 ;	jsr do_ramtas
 
-;srvinit: 
 	jsr lcd_clear
 	msg_out(message_srvinit)
 	jsr do_srvinit
 
-;ready:
+;----- main -----
 	jsr lcd_clear
 	msg_out(message_ready)
 	jsr lcd_secondrow
@@ -64,25 +72,7 @@ do_reset:
 main_loop:
 	jmp main_loop
 
-do_scinit:
-	lda #%11111111 ; Set all pins on port B to output
-  	sta VIA_DDRB
-  	lda #%11100000 ; Set top 3 pins on port A to output
-  	sta VIA_DDRA
-
-  	lda #%00111000 ; Set 8-bit mode; 2-line display; 5x8 font
-  	jsr lcd_instruction
-  	lda #%00001110 ; Display on; cursor on; blink off
-  	jsr lcd_instruction
-  	lda #%00000110 ; Increment and shift cursor; don't shift display
-  	jsr lcd_instruction
-  	lda #$00000010 ; Return home
-  	jsr lcd_instruction
-  	lda #$00000001 ; Clear display
-  	jsr lcd_instruction
-	rts
-
-do_ioinit:
+do_ioinit: ; initialise the timer for the jiffy clock
     sei
 	; disable all interrupts
   	stz VIA_IER  
@@ -99,10 +89,10 @@ do_ioinit:
 	cli
 	rts
 
-do_ramtas: 
+do_ramtas: ; initialising memory page 0, stack, bios, basic, lokking for the address of the last RAM page, write it to RAMTOP
 	lda #$00
 	tay
-	; clear memory on zeropage, stack, biospage, basicpage
+	; clear memory on zeropage, stack, biospage, basicpage, determing the memory max page
 ramtas_l1:
 	sta $0000, y
 	sta SPAGE, y
@@ -110,13 +100,13 @@ ramtas_l1:
 	sta BASICPAGE, y
 	iny
 	bne ramtas_l1
-	; checking every page 0 byte to get the last RAM Page
+	; checking 0 byte from every page to get the last RAM Page
 	tay
-	sta RAMTOP-1     ; put a 0 into $30 for later indirect acces to $30 $31 for RAM Test adress
-	lda >RAMSTART-1
-	sta RAMTOP
+	stz RAMTOP     	; put a 0 into $30 for later indirect acces to $30 $31 for RAM Test adress
+	lda >RAMSTART-1    	;
+	sta RAMTOP+1 			;after this, the RAMTOP should be set to $0400
 ramtas_l2:
-	inc RAMTOP
+	inc RAMTOP+1
 	lda #$55         ; test with 01010101
 	sta (RAMTOP), y
 	cmp (RAMTOP), y
@@ -127,10 +117,10 @@ ramtas_l2:
 	bne ramtas_ramtop
 	jmp ramtas_l2
 ramtas_ramtop:
-	dec RAMTOP  ; found the last RAM page at adress one page before 
+	dec RAMTOP+1  ; found the last RAM page at adress one page before 
 	rts
 
-do_restor:
+do_restor: ; restoring interrupt vectors to 0
     jsr do_srvinit
 	stz IRQ_SRV
 	stz IRQ_SRV+1
@@ -138,16 +128,14 @@ do_restor:
 	stz NMI_SRV+1
 	rts
 
-do_srvinit:
-	; saving the isr return adress to kernel page
+do_srvinit: ; saving the isr return adress to kernel page
 	lda <isr_end
 	sta RTI_SRV
 	lda >isr_end
 	sta RTI_SRV+1
 	rts
 
-do_putin:
-	; adding something to the input ring buffer , its always overwriting
+do_putin: ; adding something to the input ring buffer , its always overwriting
 	ldx IN_WRITE
 	sta IN_BUFFER, x
 	dec IN_WRITE
@@ -157,8 +145,7 @@ do_putin:
 putin_end:
 	rts
 
-do_getin:
-	; ring buffer to get a char
+do_getin: ; ring buffer to get a char
 	lda IN_READ
 	cmp IN_WRITE
 	bne getin_jmp1
@@ -174,15 +161,15 @@ getin_jmp1:
 getin_end:
 	rts
 
-do_iobase:
-	ldx IOBASE & $00ff
-	ldy IOBASE >> 8 & $00ff
+do_iobase: ; return the io base address lo: X, hi: Y
+	ldx #<IOBASE
+	ldy #>IOBASE
 	rts
 
-	; higher two bytes of the 3 bytes of the 1/50 secs of a day. 24h * 60m * 60s * 50, 4.320.000 ticks per day
     jiffyday .equ $E1EB  
 
-do_settim:
+; ---- Jiffy clock ----
+do_settim: ; setting the jiffy clock to the value, lo: Y, mid: X, hi: A
 	sei
 	sta JTIME+2
 	stx JTIME+1
@@ -190,7 +177,7 @@ do_settim:
 	cli
 	rts
 
-do_rdtim:
+do_rdtim:; reading the actual jiffy clock, lo: Y, mid: X, hi: A
 	sei
 	lda JTIME+2
 	ldx JTIME+1
@@ -198,7 +185,7 @@ do_rdtim:
 	cli
 	rts
 
-do_udtim:
+do_udtim: ; update the jiffy clock
 	inc JTIME+2     ; increment Low-Byte 
     bne jiend     ; =0?
     inc JTIME+1   ; ja, dann Überlauf 255->0 und High-Byte auch erhöhen
@@ -218,52 +205,79 @@ jtest:
 jiend:
 	rts
 
-// Display routines
-lcd_wait:
-  pha
-  lda #%00000000  ; Port B is input
-  sta VIA_DDRB
+; ---- Display routines ----
+do_scinit: ; initialise LC-Display
+	lda #%11111111 ; Set all pins on port B to output
+  	sta VIA_DDRB
+  	lda #%11100000 ; Set top 3 pins on port A to output
+  	sta VIA_DDRA
+
+  	lda #%00111000 ; Set 8-bit mode; 2-line display; 5x8 font
+  	jsr lcd_instruction
+  	lda #%00001110 ; Display on; cursor on; blink off
+  	jsr lcd_instruction
+  	lda #%00000110 ; Increment and shift cursor; don't shift display
+  	jsr lcd_instruction
+  	lda #$00000010 ; Return home
+  	jsr lcd_instruction
+  	lda #$00000001 ; Clear display
+  	jsr lcd_instruction
+	rts
+
+lcd_wait: ; wait until the LCD is not busy
+	pha
+	lda #%00000000  ; Port B is input
+	sta VIA_DDRB
 lcdbusy:
-  lda #LCD_RW
-  sta VIA_ORA
-  lda #(LCD_RW | LCD_E)
-  sta VIA_ORA
-  lda VIA_ORB
-  and #%10000000
-  bne lcdbusy
+	lda #LCD_RW
+	sta VIA_ORA
+	lda #(LCD_RW | LCD_E)
+	sta VIA_ORA
+	lda VIA_ORB
+	and #%10000000
+	bne lcdbusy
 
-  lda #LCD_RW
-  sta VIA_ORA
-  lda #%11111111  ; Port B is output
-  sta VIA_DDRB
-  pla
-  rts
+	lda #LCD_RW
+	sta VIA_ORA
+	lda #%11111111  ; Port B is output
+	sta VIA_DDRB
+	pla
+	rts
 
-lcd_instruction:
-  jsr lcd_wait
-  sta VIA_ORB
-  lda #0         ; Clear RS/RW/E bits
-  sta VIA_ORA
-  lda #LCD_E         ; Set E bit to send instruction
-  sta VIA_ORA
-  lda #0         ; Clear RS/RW/E bits
-  sta VIA_ORA
-  rts
-lcd_secondrow:
-  jsr lcd_wait
-  lda #%10000000 + $40
-  jsr lcd_instruction
-  rts
-lcd_home:
+lcd_instruction: ; sending A as an instruction to LCD
+	jsr lcd_wait
+	sta VIA_ORB
+	lda #0         ; Clear RS/RW/E bits
+	sta VIA_ORA
+	lda #LCD_E         ; Set E bit to send instruction
+	sta VIA_ORA
+	lda #0         ; Clear RS/RW/E bits
+	sta VIA_ORA
+	rts
+lcd_secondrow: ; move cursor to second row
+	pha
+  	jsr lcd_wait
+  	lda #%10000000 + $40
+  	jsr lcd_instruction
+	pla
+  	rts
+lcd_home:; move cursor to first row
+	pha
 	jsr lcd_wait
 	lda #%10000000 + $00
-	jmp lcd_instruction
-lcd_clear:
+	jsr lcd_instruction
+	pla
+	rts
+lcd_clear: ; clear entire LCD
+	pha
 	jsr lcd_wait
 	lda #$00000001 ; Clear display
-  	jmp lcd_instruction
+  	jsr lcd_instruction
+	pla
+	rts
 
-do_strout:
+do_strout: ; output string, address of text hi: A, lo: X
+	phy
     stx TEMP_VEC
 	sta TEMP_VEC+1
   	ldy #0
@@ -274,36 +288,32 @@ strprint:
   	iny
   	jmp strprint
 strreturn:
+	ply
 	rts
 
-do_chrout:
-  jsr lcd_wait
-  sta VIA_ORB
-  lda #LCD_RS         ; Set RS; Clear RW/E bits
-  sta VIA_ORA
-  lda #(LCD_RS | LCD_E)   ; Set E bit to send instruction
-  sta VIA_ORA
-  lda #LCD_RS         ; Clear E bits
-  sta VIA_ORA
-  rts
+do_chrout: ; output a single char to LCD, char in A
+	jsr lcd_wait
+	sta VIA_ORB
+	lda #LCD_RS         ; Set RS; Clear RW/E bits
+	sta VIA_ORA
+	lda #(LCD_RS | LCD_E)   ; Set E bit to send instruction
+	sta VIA_ORA
+	lda #LCD_RS         ; Clear E bits
+	sta VIA_ORA
+	rts
 
-
-do_nmi: 
+;---- Interrupt service routines ----
+do_nmi: ; nmi service routine
 	pha
 	phx
 	phy
-	; look if nmi service routine is set
+	; look if an external nmi service routine is set
 	lda #$00
 	cmp >NMI_SRV
-	beq nmi_end
+	beq isr_end
 	jmp (NMI_SRV)
-nmi_end:
-	ply
-	plx
-	pla
-	rti
 	 
-do_irq: 
+do_irq: ; irq service routine
 	pha
 	phx
 	phy
@@ -314,26 +324,27 @@ do_irq:
 	jsr do_udtim
 isr_no_timer1:
 	; here do other isr stuff
-	; look if irq service routine is set
+	; look if an external irq service routine is set
 	lda #$00
 	cmp >IRQ_SRV
 	beq isr_end
 	jmp (IRQ_SRV)
-isr_end:
+isr_end: ; this is the ending for all interrupt service routines
 	ply
 	plx
 	pla
 	rti
 
 
-; Messages
-message_w6502sbc: .asciiz "W6502SBC Welcome"
-message_ramtas: .asciiz "W6502SBC RAMTAS"
-message_srvinit: .asciiz "W6502SBC SRV INIT"
-message_ready: .asciiz "W6502SBC ready:"
-message_britta: .asciiz "Hallo Britta"
+;----- Messages of the bios -----
+	message_w6502sbc: .asciiz "W6502SBC Welcome"
+	message_ramtas: .asciiz "W6502SBC RAMTAS"
+	message_srvinit: .asciiz "W6502SBC SRV INIT"
+	message_ready: .asciiz "W6502SBC ready"
+	message_britta: .asciiz "Hallo Britta"
 
-end_of_kernel:
+;----- jump table for bios routines -----
+jump_table: 
 
 	.org $FF00 ; STROUT output string, A = high, X = low
 	jmp do_strout
@@ -368,14 +379,8 @@ end_of_kernel:
 	.org $FFF3 ; IOBASE	Read the base address of I/O chips
 	jmp do_iobase
 
+;----- cpu vectors -----
 	.org  $FFFA
 	.word   do_nmi
 	.word   do_reset
 	.word   do_irq
-
-;macros
-.macro msg_out(msg)
-	lda #>msg
-	ldx #<msg
-	jsr do_strout 
-.endmacro
