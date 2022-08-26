@@ -344,6 +344,7 @@ isr_end: ; this is the ending for all interrupt service routines
 
 ;----- jump table for bios routines -----
 jump_table: 
+.segment "JUMPTABLE"
 
 	.org $FF00 ; STROUT output string, A = high, X = low
 	jmp do_strout
@@ -379,6 +380,7 @@ jump_table:
 	jmp do_iobase
 
 ;----- cpu vectors -----
+.segment "VECTORS"
 	.org  $FFFA
 	.word   do_nmi
 	.word   do_reset
