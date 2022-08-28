@@ -223,14 +223,14 @@ jiend:
 
 ; ---- Display routines ----
 .org $e100
-do_scinit: ; initialise LC-Display
-	lda #%11111111 ; Set all pins on port B to output
+do_scinit: 		; initialise LC-Display
+	lda #$ff 	; Set all pins on port B to output
   	sta VIA_DDRB
-	lda #0
+	lda #0 		; all pins low
 	sta VIA_ORB
 
-	; reset the display, waiit at least 15ms
-	lda #$58 
+	; reset the display, wait at least 15ms
+	lda #$58
 	jsr do_delay
 
 	; send 3 times the reset...
@@ -391,18 +391,19 @@ do_chrout: ; output a single char to LCD, char in A
 
 ;------------------------------------------------------------------------------
 ; provides about 100uS delay for each OUTER loop. 
-; The count of outloops will be used from A
+; The count of outloops will be used from A.
+; for 1MHz we had a cycle with 1us. if A = 1 we had 20 + 20 clks, which means a minimum of 200us
 do_delay:
-	phy
+	phy			; 3 clk
 @outer:    
-	ldy  #$28              ; this gives an inner loop of 5 cycles x 20 =  100uS        
+	ldy  #$1A	; 2 clk, this gives an inner loop of 5 cycles x 20 =  100uS        
 @inner:
-    dey
-	bne @inner
-    sbc #$01
-    bne @outer             ; exit when COUNTER is less than 0
-    ply
-    rts
+    dey			; 2 clk
+	bne @inner	; 2 + 1 clk (for the jump back)
+    sbc #$01	; 2 clk
+    bne @outer	; 2 + 1 clk exit when COUNTER is less than 0
+    ply			; 4 clk
+    rts			; 6 clk 
 
 ;---- Interrupt service routines ----
 do_nmi: ; nmi service routine
