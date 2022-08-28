@@ -54,13 +54,13 @@ RAMSTART .equ $0400
 	stz VIA_ORA
 	pla
 .endmacro
-;----- bios code -----
+;----- bios start code -----
 do_reset: ; bios reset routine 
 	sei
     ldx #$ff ; set the stack pointer 
    	txs 
 
-	jsr do_ioinit
+	jsr do_ioinit  ; initialise port A an timer of VIA
 	jsr do_scinit
 	
 	;jsr lcd_clear
@@ -292,14 +292,14 @@ do_scinit: 		; initialise LC-Display on port B
 	lda #$1f
 	jsr do_delay
 
-  	lda #(%00000011 | LCD_E) ; 1. RESET
+  	lda #(%00000011 | LCD_E) ; 2. RESET
 	sta VIA_ORB
 	eor #LCD_E
 	sta VIA_ORB
 	lda #$01
 	jsr do_delay
 
-  	lda #(%00000011 | LCD_E) ; 1. RESET
+  	lda #(%00000011 | LCD_E) ; 3. RESET
 	sta VIA_ORB
 	eor #LCD_E
 	sta VIA_ORB
@@ -312,9 +312,8 @@ do_scinit: 		; initialise LC-Display on port B
 	sta VIA_ORB
 	lda #$01
 	jsr do_delay
-	lda #$01
-	jsr do_delay
-	
+
+	; after this command we can use the 4-Bit mode and we could use busy flag for former sync
   	lda #%00101000 ; 2-line display; 5x8 font
   	jsr lcd_instruction
 
@@ -361,7 +360,6 @@ lcd_wait: ; wait until the LCD is not busy
 	rts
 
 lcd_instruction: ; sending A as an instruction to LCD
-;	jsr lcd_wait
 	pha
 	pha
 	lsr
@@ -378,7 +376,6 @@ lcd_instruction: ; sending A as an instruction to LCD
 	sta VIA_ORB
 	eor #LCD_E
 	sta VIA_ORB
-;	jsr do_delay
 	pla
 	rts
 
@@ -441,9 +438,9 @@ do_chrout: ; output a single char to LCD, char in A
 	rts
 
 ;------------------------------------------------------------------------------
-; provides about 100uS delay for each OUTER loop. 
 ; The count of outloops will be used from A.
-; for 1MHz we had a cycle with 1us. if A = 1 we had 20 + 20 clks, which means a minimum of 200us
+; for 1MHz we had a cycle with 1us. if A = 1 we had 20 + 20 clks, which means a minimum of 200us,
+; but the reality is somtime different. To get the 200us on my sbc there must be 32 inner loops.
 ; $01 = 200uS, $02= 360us, $04= 700uS, $08= 1,4ms, $10= 2,7ms, $20= 5,3ms, $40= 10,6ms, $80= 21,3ms, $FF=42,3ms
 do_delay:
 	phy			; 3 clk
