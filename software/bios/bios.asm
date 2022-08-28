@@ -15,6 +15,9 @@ LCD_RS .equ %00100000
 
 
 ; ZERO Page registers $0000.. $00ff
+COUNTER .equ $20 ; counter for different things
+HNIBBLE .equ $21
+LNIBBLE .equ $22
 RAMTOP .equ $30 ; store the page of the last RAM ($30 is the low adress)
 
 JTIME .equ $A0 ; to $A2 three bytes jiffy time, higher two bytes of the 3 bytes of the 1/50 secs of a day. 24h * 60m * 60s * 50, 4.320.000 ticks per day
@@ -43,15 +46,23 @@ RAMSTART .equ $0400
 	ldx #<msg
 	jsr do_strout 
 .endmacro
+
+.macro toggle_a()
+	lda #$ff
+	sta VIA_ORA
+	lda #$00
+	sta VIA_ORA
+.endmacro
 ;----- bios code -----
 do_reset: ; bios reset routine 
 	sei
     ldx #$ff ; set the stack pointer 
    	txs 
 
-	;jsr do_ioinit
+	jsr do_ioinit
 	jsr do_scinit
-	jsr lcd_clear
+	
+	;jsr lcd_clear
 	msg_out(message_w6502sbc)
 
 ;	jsr lcd_clear
@@ -73,7 +84,7 @@ main_loop:
 	jmp main_loop
 
 do_ioinit: ; initialise the timer for the jiffy clock
-    sei
+/*    sei
 	; disable all interrupts
   	stz VIA_IER  
 	; setting free run mode with interrupts enabled
@@ -87,6 +98,11 @@ do_ioinit: ; initialise the timer for the jiffy clock
 	lda #>JIFFY_VIA_TIMER_LOAD
 	sta VIA_T1LH 
 	cli
+*/
+	lda #$FF
+	sta VIA_DDRA
+	lda #$00
+	sta VIA_ORA
 	rts
 
 do_ramtas: ; initialising memory page 0, stack, bios, basic, lokking for the address of the last RAM page, write it to RAMTOP
@@ -206,71 +222,132 @@ jiend:
 	rts
 
 ; ---- Display routines ----
+.org $e100
 do_scinit: ; initialise LC-Display
 	lda #%11111111 ; Set all pins on port B to output
   	sta VIA_DDRB
-  	lda #%11100000 ; Set top 3 pins on port A to output
-  	sta VIA_DDRA
+	lda #0
+	sta VIA_ORB
 
-  	lda #%00111000 ; Set 8-bit mode; 2-line display; 5x8 font
+	; reset the display, waiit at least 15ms
+	lda #$58 
+	jsr do_delay
+
+	; send 3 times the reset...
+  	lda #(%00000011 | LCD_E) ; 1. RESET
+	sta VIA_ORB
+	eor #LCD_E
+	sta VIA_ORB
+	lda #$1f
+	jsr do_delay
+
+  	lda #(%00000011 | LCD_E) ; 1. RESET
+	sta VIA_ORB
+	eor #LCD_E
+	sta VIA_ORB
+	lda #$01
+	jsr do_delay
+
+  	lda #(%00000011 | LCD_E) ; 1. RESET
+	sta VIA_ORB
+	eor #LCD_E
+	sta VIA_ORB
+	lda #$01
+	jsr do_delay
+
+  	lda #(%00000010 | LCD_E) ; Set 4-bit mode; 
+	sta VIA_ORB
+	eor #LCD_E
+	sta VIA_ORB
+	lda #$01
+	jsr do_delay
+	lda #$01
+	jsr do_delay
+	
+  	lda #%00101000 ; 2-line display; 5x8 font
   	jsr lcd_instruction
+
   	lda #%00001110 ; Display on; cursor on; blink off
   	jsr lcd_instruction
+
   	lda #%00000110 ; Increment and shift cursor; don't shift display
   	jsr lcd_instruction
-  	lda #$00000010 ; Return home
+
+  	lda #%00000010 ; Return home
   	jsr lcd_instruction
-  	lda #$00000001 ; Clear display
+
+  	lda #%00000001 ; Clear display
   	jsr lcd_instruction
 	rts
 
 lcd_wait: ; wait until the LCD is not busy
 	pha
-	lda #%00000000  ; Port B is input
+	lda #%11110000 ;set PORTB pins 0 - 3 as input
 	sta VIA_DDRB
-lcdbusy:
+@lcdbusy:
 	lda #LCD_RW
-	sta VIA_ORA
-	lda #(LCD_RW | LCD_E)
-	sta VIA_ORA
+	sta VIA_ORB
+	ora #LCD_E
+	sta VIA_ORB
+	; loding high nibble with busy flag
 	lda VIA_ORB
-	and #%10000000
-	bne lcdbusy
-
+	sta HNIBBLE
 	lda #LCD_RW
-	sta VIA_ORA
-	lda #%11111111  ; Port B is output
+	sta VIA_ORB
+	ora #LCD_E
+	sta VIA_ORB
+	; getting the low nibble, address counter
+	lda VIA_ORB
+	sta LNIBBLE
+	lda #LCD_RW
+	sta VIA_ORB
+	lda HNIBBLE
+	and #%00001000 ; mask the busy flag
+	bne @lcdbusy
+	lda #$FF ; setting port to output again
 	sta VIA_DDRB
 	pla
 	rts
 
 lcd_instruction: ; sending A as an instruction to LCD
-	jsr lcd_wait
+;	jsr lcd_wait
+	pha
+	pha
+	lsr
+	lsr
+	lsr
+	lsr
+	ora #LCD_E
 	sta VIA_ORB
-	lda #0         ; Clear RS/RW/E bits
-	sta VIA_ORA
-	lda #LCD_E         ; Set E bit to send instruction
-	sta VIA_ORA
-	lda #0         ; Clear RS/RW/E bits
-	sta VIA_ORA
+	eor #LCD_E
+	sta VIA_ORB
+	pla
+	and #$0f
+	ora #LCD_E
+	sta VIA_ORB
+	eor #LCD_E
+	sta VIA_ORB
+;	jsr do_delay
+	pla
 	rts
+
 lcd_secondrow: ; move cursor to second row
 	pha
-  	jsr lcd_wait
+  	;jsr lcd_wait
   	lda #%10000000 + $40
   	jsr lcd_instruction
 	pla
   	rts
 lcd_home:; move cursor to first row
 	pha
-	jsr lcd_wait
+	;jsr lcd_wait
 	lda #%10000000 + $00
 	jsr lcd_instruction
 	pla
 	rts
 lcd_clear: ; clear entire LCD
 	pha
-	jsr lcd_wait
+	;jsr lcd_wait
 	lda #$00000001 ; Clear display
   	jsr lcd_instruction
 	pla
@@ -293,14 +370,39 @@ strreturn:
 
 do_chrout: ; output a single char to LCD, char in A
 	jsr lcd_wait
+	pha
+	; sending high nibble
+	lsr
+	lsr
+	lsr
+	lsr
+	ora #(LCD_RS | LCD_E)
 	sta VIA_ORB
-	lda #LCD_RS         ; Set RS; Clear RW/E bits
-	sta VIA_ORA
-	lda #(LCD_RS | LCD_E)   ; Set E bit to send instruction
-	sta VIA_ORA
-	lda #LCD_RS         ; Clear E bits
-	sta VIA_ORA
+	eor #LCD_E
+	sta VIA_ORB
+
+	pla 
+	and #$0F
+	ora #(LCD_RS | LCD_E)
+	sta VIA_ORB
+	eor #LCD_E
+	sta VIA_ORB
 	rts
+
+;------------------------------------------------------------------------------
+; provides about 100uS delay for each OUTER loop
+; Set COUNTER with required OUTER iterations before calling
+do_delay:
+	phy
+@outer:    
+	ldy  #$28              ; this gives an inner loop of 5 cycles x 20 =  100uS        
+@inner:
+    dey
+	bne @inner
+    sbc #$01
+    bne @outer             ; exit when COUNTER is less than 0
+    ply
+    rts
 
 ;---- Interrupt service routines ----
 do_nmi: ; nmi service routine
