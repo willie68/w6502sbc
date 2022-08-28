@@ -390,8 +390,8 @@ do_chrout: ; output a single char to LCD, char in A
 	rts
 
 ;------------------------------------------------------------------------------
-; provides about 100uS delay for each OUTER loop
-; Set COUNTER with required OUTER iterations before calling
+; provides about 100uS delay for each OUTER loop. 
+; The count of outloops will be used from A
 do_delay:
 	phy
 @outer:    
