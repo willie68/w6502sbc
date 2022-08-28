@@ -48,10 +48,11 @@ RAMSTART .equ $0400
 .endmacro
 
 .macro toggle_a()
+	pha
 	lda #$ff
 	sta VIA_ORA
-	lda #$00
-	sta VIA_ORA
+	stz VIA_ORA
+	pla
 .endmacro
 ;----- bios code -----
 do_reset: ; bios reset routine 
@@ -81,6 +82,55 @@ do_reset: ; bios reset routine
 
 	cli
 main_loop:
+	lda #$00 ; 34,7ms
+	toggle_a()
+	jsr do_delay
+	toggle_a()
+
+	lda #$01  ;160us
+	toggle_a()
+	jsr do_delay
+	toggle_a()
+
+	lda #$02 ; 303us
+	toggle_a()
+	jsr do_delay
+	toggle_a()
+
+	lda #$04 ; 575us
+	toggle_a()
+	jsr do_delay
+	toggle_a()
+
+	lda #$08 ; 1,1 ms
+	toggle_a()
+	jsr do_delay
+	toggle_a()
+
+	lda #$10 ; 2,2 ms
+	toggle_a()
+	jsr do_delay
+	toggle_a()
+
+	lda #$20 ; 4,4 ms
+	toggle_a()
+	jsr do_delay
+	toggle_a()
+
+	lda #$40 ; 8,7ms
+	toggle_a()
+	jsr do_delay
+	toggle_a()
+
+	lda #$80 ; 17,4
+	toggle_a()
+	jsr do_delay
+	toggle_a()
+
+	lda #$ff ; 34,7
+	toggle_a()
+	jsr do_delay
+	toggle_a()
 	jmp main_loop
 
 do_ioinit: ; initialise the timer for the jiffy clock
@@ -222,8 +272,9 @@ jiend:
 	rts
 
 ; ---- Display routines ----
-.org $e100
-do_scinit: 		; initialise LC-Display
+do_scinit: 		; initialise LC-Display on port B
+	; D4..D7 on Port pins PB0..3
+	; RS; R/W and E on Port pins PB5, PB6, PB7
 	lda #$ff 	; Set all pins on port B to output
   	sta VIA_DDRB
 	lda #0 		; all pins low
@@ -393,10 +444,11 @@ do_chrout: ; output a single char to LCD, char in A
 ; provides about 100uS delay for each OUTER loop. 
 ; The count of outloops will be used from A.
 ; for 1MHz we had a cycle with 1us. if A = 1 we had 20 + 20 clks, which means a minimum of 200us
+; $01 = 200uS, $02= 360us, $04= 700uS, $08= 1,4ms, $10= 2,7ms, $20= 5,3ms, $40= 10,6ms, $80= 21,3ms, $FF=42,3ms
 do_delay:
 	phy			; 3 clk
 @outer:    
-	ldy  #$1A	; 2 clk, this gives an inner loop of 5 cycles x 20 =  100uS        
+	ldy  #$20	; 2 clk, this gives an inner loop of 5 cycles x 20 =  100uS        
 @inner:
     dey			; 2 clk
 	bne @inner	; 2 + 1 clk (for the jump back)
