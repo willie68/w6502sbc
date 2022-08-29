@@ -27,6 +27,11 @@ RAMSTART .equ $0400
 
 ;----- macros -----
 .macro msg_out(msg)
+	lda #>message_w6502sbc
+	ldx #<message_w6502sbc
+	jsr do_strout 
+	lda #" "
+	jsr do_chrout
 	lda #>msg
 	ldx #<msg
 	jsr do_strout 
@@ -50,8 +55,7 @@ do_reset: ; bios reset routine
 	jsr do_scinit
 	
 	;jsr lcd_clear
-	msg_out(message_w6502sbc)
-
+	msg_out(message_welcome)
 ;	jsr lcd_clear
 ;	msg_out(message_ramtas)
 ;	jsr do_ramtas
@@ -294,11 +298,12 @@ do_setnmisrv: ; setting an external irq routine for checking, A hi, X lo
 	rts
 
 ;----- Messages of the bios -----
-	message_w6502sbc: .asciiz "W6502SBC Welcome"
-	message_ramtas: .asciiz "W6502SBC RAMTAS"
-	message_srvinit: .asciiz "W6502SBC SRV INIT"
-	message_ready: .asciiz "W6502SBC ready"
-	message_showdec: .asciiz "W6502SBC show dec"
+	message_w6502sbc: .asciiz "W6502SBC"
+	message_welcome: .asciiz "Welcome"
+	message_ramtas: .asciiz "RAMTAS"
+	message_srvinit: .asciiz "SRV INIT"
+	message_ready: .asciiz "ready"
+	message_showdec: .asciiz "show dec"
 	message_britta: .asciiz "Hallo Britta"
 
 ;----- jump table for bios routines -----
