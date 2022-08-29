@@ -9,11 +9,6 @@
 ;----- constant definitions -----
 ;constants for board specifig
 JIFFY_VIA_TIMER_LOAD .equ 20000   ; this is the value for 1MHZ / 50 ticks per second
-; constants for LCD
-LCD_E  .equ %10000000
-LCD_RW .equ %01000000
-LCD_RS .equ %00100000
-
 
 ; Stack  $0100.. $01ff
 STACK .equ $0100

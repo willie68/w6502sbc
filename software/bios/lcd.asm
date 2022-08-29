@@ -1,13 +1,17 @@
+; constants for LCD
+LCD_E  .equ %10000000
+LCD_RW .equ %01000000
+LCD_RS .equ %00100000
+
 ; ---- Display routines ----
 do_scinit: 		; initialise LC-Display on port B
 	; D4..D7 on Port pins PB0..3
 	; RS; R/W and E on Port pins PB5, PB6, PB7
 	lda #$ff 	; Set all pins on port B to output
   	sta VIA_DDRB
-	lda #0 		; all pins low
-	sta VIA_ORB
+	stz VIA_ORB
 
-	; reset the display, wait at least 15ms
+	; reset the display, wait at least 15ms before sending something to the lcd
 	lda #$58
 	jsr do_delay
 
@@ -16,28 +20,28 @@ do_scinit: 		; initialise LC-Display on port B
 	sta VIA_ORB
 	eor #LCD_E
 	sta VIA_ORB
-	lda #$1f
+    lda #$1f                 ; wait min 4.1ms
 	jsr do_delay
 
   	lda #(%00000011 | LCD_E) ; 2. RESET
 	sta VIA_ORB
 	eor #LCD_E
 	sta VIA_ORB
-	lda #$01
+	lda #$01                 ; wait min 100us
 	jsr do_delay
 
-  	lda #(%00000011 | LCD_E) ; 3. RESET
+  	lda #(%00000011 | LCD_E) ; 3. RESET min 100us
 	sta VIA_ORB
 	eor #LCD_E
 	sta VIA_ORB
-	lda #$01
+	lda #$01                 ; wait min 100us
 	jsr do_delay
 
   	lda #(%00000010 | LCD_E) ; Set 4-bit mode; 
 	sta VIA_ORB
 	eor #LCD_E
 	sta VIA_ORB
-	lda #$01
+	lda #$01                 ; wait min 37us
 	jsr do_delay
 
 	; after this command we can use the 4-Bit mode and we could use busy flag for former sync
@@ -87,7 +91,8 @@ lcd_wait: ; wait until the LCD is not busy
 	rts
 
 lcd_instruction: ; sending A as an instruction to LCD
-	pha
+	jsr lcd_busy
+    pha
 	pha
 	lsr
 	lsr
