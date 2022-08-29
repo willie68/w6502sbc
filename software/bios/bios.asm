@@ -59,63 +59,24 @@ do_reset: ; bios reset routine
 	jsr lcd_clear
 	msg_out(message_srvinit)
 
-;----- main -----
 	jsr lcd_clear
 	msg_out(message_ready)
-	jsr lcd_secondrow
-	msg_out(message_britta)
-
 	cli
+
+	jsr lcd_clear
+	msg_out(message_showdec)
+	jsr lcd_secondrow
+	lda #$04					; output 1059 = $0423
+	ldx #$23
+	jsr do_numout
+	lda #" "
+	jsr do_chrout
+	lda #$04					; output 1059 = $0423
+	jsr do_hexout
+
+;----- main -----
 main_loop:
-	lda #$00 ; 34,7ms
-	toggle_a()
-	jsr do_delay
-	toggle_a()
-
-	lda #$01  ;160us
-	toggle_a()
-	jsr do_delay
-	toggle_a()
-
-	lda #$02 ; 303us
-	toggle_a()
-	jsr do_delay
-	toggle_a()
-
-	lda #$04 ; 575us
-	toggle_a()
-	jsr do_delay
-	toggle_a()
-
-	lda #$08 ; 1,1 ms
-	toggle_a()
-	jsr do_delay
-	toggle_a()
-
-	lda #$10 ; 2,2 ms
-	toggle_a()
-	jsr do_delay
-	toggle_a()
-
-	lda #$20 ; 4,4 ms
-	toggle_a()
-	jsr do_delay
-	toggle_a()
-
-	lda #$40 ; 8,7ms
-	toggle_a()
-	jsr do_delay
-	toggle_a()
-
-	lda #$80 ; 17,4
-	toggle_a()
-	jsr do_delay
-	toggle_a()
-
-	lda #$ff ; 34,7
-	toggle_a()
-	jsr do_delay
-	toggle_a()
+	
 	jmp main_loop
 
 do_ioinit: ; initialise the timer for the jiffy clock
@@ -319,17 +280,17 @@ isr_end: ; this is the ending for all interrupt service routines
 	plx
 	pla
 	rti
-do_setirqsrv: ; setting an external irq routine for checking, A lo, X hi
-	sta IRQ_SRV
-	sty IRQ_SRV+1
+do_setirqsrv: ; setting an external irq routine for checking, A hi, X lo
+	stx IRQ_SRV
+	sta IRQ_SRV+1
 	rts
-do_setbrksrv: ; setting an external irq routine for checking, A lo, X hi
-	sta BRK_SRV
-	sty BRK_SRV+1
+do_setbrksrv: ; setting an external irq routine for checking, A hi, X lo
+	stx BRK_SRV
+	sta BRK_SRV+1
 	rts
-do_setnmisrv: ; setting an external irq routine for checking, A lo, X hi
-	sta NMI_SRV
-	sty NMI_SRV+1
+do_setnmisrv: ; setting an external irq routine for checking, A hi, X lo
+	stx NMI_SRV
+	sta NMI_SRV+1
 	rts
 
 ;----- Messages of the bios -----
@@ -337,6 +298,7 @@ do_setnmisrv: ; setting an external irq routine for checking, A lo, X hi
 	message_ramtas: .asciiz "W6502SBC RAMTAS"
 	message_srvinit: .asciiz "W6502SBC SRV INIT"
 	message_ready: .asciiz "W6502SBC ready"
+	message_showdec: .asciiz "W6502SBC show dec"
 	message_britta: .asciiz "Hallo Britta"
 
 ;----- jump table for bios routines -----

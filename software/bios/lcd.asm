@@ -91,7 +91,7 @@ lcd_wait: ; wait until the LCD is not busy
 	rts
 
 lcd_instruction: ; sending A as an instruction to LCD
-	jsr lcd_busy
+	jsr lcd_wait
     pha
 	pha
 	lsr
@@ -168,3 +168,64 @@ do_chrout: ; output a single char to LCD, char in A
 	eor #LCD_E
 	sta VIA_ORB
 	rts
+
+do_numout:  ; output a number in decimal, A: hi byte, X lo byte
+            ; Output 16-bit unsigned integer to stdout
+            ; by Michael T. Barry 2017.07.07. Free to
+            ; copy, use and modify, but without warranty
+@iout:
+    stx $a0 ; low-order half
+    sta $a1 ; high-order half
+    lda #0 ; null delimiter for print
+    pha ; repeat {
+@iout2: ; divide by 10
+    lda #0 ; remainder
+    ldx #16 ; loop counter
+@iout3:
+    cmp #5 ; partial remainder >= 10 (/2)?
+    bcc @iout4
+    sbc #5 ; yes: update partial
+; remainder, set carry
+@iout4:
+    rol $a0 ; gradually replace dividend
+    rol $a1 ; with the quotient
+    rol ; A is gradually replaced
+    dex ; with the remainder
+    bne @iout3 ; loop 16 times
+    ora #$b0 ; convert remainder to ASCII
+    pha ; stack digits in ascending
+    lda $a0 ; order ('0' for zero)
+    ora $a1
+    bne @iout2 ; } until quotient is 0
+    pla
+@iout5:
+    jsr do_chrout ; print digits in descending
+    pla ; order until delimiter is
+    bne @iout5 ; encountered
+    rts 
+do_hexout: ; output a number in hex with leading $, A: hi byte, X lo byte 
+    pha
+    pha
+    lda #"$"
+    jsr do_chrout
+    pla             ; output hi byte
+    jsr do_bhexout
+    txa             ; output hi byte
+    jsr do_bhexout
+    pla
+    rts
+do_bhexout:
+    pha             ; output hi nibble
+    pha
+    lsr
+    lsr
+    lsr
+    lsr
+    ora #$30        ; add "0"
+    jsr do_chrout
+    pla             ; output lo nibble of hi byte
+    and #$0F
+    ora #$30        ; add "0"
+    jsr do_chrout
+    pla
+    rts
