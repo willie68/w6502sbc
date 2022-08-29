@@ -46,14 +46,19 @@ RAMSTART .equ $0400
 .endmacro
 ;----- bios start code -----
 do_reset: ; bios reset routine 
-	sei
     ldx #$ff ; set the stack pointer 
    	txs 
+
+	lda #$00
+	ldx #$00
+	ldy #$00
+	jsr do_settim
 
 	jsr do_srvinit ; cleanup the interrupt registers
 	jsr do_ioinit  ; initialise port A an timer of VIA
 	jsr do_scinit
-	
+
+
 	;jsr lcd_clear
 	msg_out(message_welcome)
 ;	jsr lcd_clear
@@ -65,11 +70,10 @@ do_reset: ; bios reset routine
 
 	jsr lcd_clear
 	msg_out(message_ready)
-	cli
 
 	jsr lcd_clear
 	msg_out(message_showdec)
-	jsr lcd_secondrow
+/*	jsr lcd_secondrow
 	lda #$04					; output 1059 = $0423
 	ldx #$23
 	jsr do_numout
@@ -77,18 +81,49 @@ do_reset: ; bios reset routine
 	jsr do_chrout
 	lda #$04					; output 1059 = $0423
 	jsr do_hexout
-
+	lda #" "
+	jsr do_chrout
+*/
+	stz COUNTER
 ;----- main -----
 main_loop:
-	
+	jsr do_udtim
+
+	lda #$01
+	ldx #$06
+	jsr lcd_goto
+	lda JTIME					; output 1059 = $0423
+	jsr do_bhexout
+
+	lda #$01
+	ldx #$09
+	jsr lcd_goto
+	lda JTIME+1					; output 1059 = $0423
+	jsr do_bhexout
+
+	lda #$01
+	ldx #$0C
+	jsr lcd_goto
+	lda JTIME+2					; output 1059 = $0423
+	jsr do_bhexout
+
+	lda #$01
+	ldx #$0F
+	jsr lcd_goto
+	lda JTIME+1
+	ldx JTIME+2
+	jsr do_numout
+
+;	lda #$01
+;	jsr do_delay
 	jmp main_loop
 
 do_ioinit: ; initialise the timer for the jiffy clock
-/*    sei
-	; disable all interrupts
-  	stz VIA_IER  
+    sei
+	lda #%01111111
+  	sta VIA_IER  ; disable all interrupts
 	; setting free run mode with interrupts enabled
-	lda #%01000000
+	lda #%01000011
   	sta VIA_ACR     
 	lda #%11000000
   	sta VIA_IER  ; enable interrupt for timer 1
@@ -98,7 +133,7 @@ do_ioinit: ; initialise the timer for the jiffy clock
 	lda #>JIFFY_VIA_TIMER_LOAD
 	sta VIA_T1LH 
 	cli
-*/
+
 	lda #$FF
 	sta VIA_DDRA
 	lda #$00
@@ -261,16 +296,19 @@ do_irq: ; irq service routine
 	phx
 	phy
 	; check for brk
-	php					; put status to stack
+/*	php					; put status to stack
 	pla					; get staus in A
 	and #$10
 	beq @irq1
 	jmp do_brk
+*/
 	; testing for timer 1, jiffy timer interrupt
-@irq1	bit VIA_IFR          ; Bit 6 copied to overflow flag
+/*@irq1	bit VIA_IFR          ; Bit 6 copied to overflow flag
   	bvc isr_no_timer1
 	lda VIA_T1CL         ; Clears the interrupt
+*/
 	jsr do_udtim
+	jmp isr_end
 isr_no_timer1:
 	; here do other isr stuff
 	
@@ -312,6 +350,24 @@ jump_table:
 STROUT:
 	.org $FF00 ; STROUT output string, A = high, X = low
 	jmp do_strout
+HEXOUT:
+	.org $FF03 ; HEXOUT output a 16-bit value as hex with leading $, A = high, X = low
+	jmp do_hexout
+BHEXOUT:
+	.org $FF06 ; BHEXOUT output a 8-bit value as hex without leading, A = value
+	jmp do_bhexout
+NUMOUT:
+	.org $FF09 ; NUMOUT output a 16-bit value as decimal, A = high, X = low
+	jmp do_numout
+LCDCLEAR:
+	.org $FF0C ; LCDCLEAR Clear display
+	jmp lcd_clear
+LCDHOME:
+	.org $FF0F ; LCDHOME goto 1. line 1. column
+	jmp lcd_home
+LCDSECROW:
+	.org $FF12 ; LCDSECROW goto 2. line 1. Column
+	jmp lcd_secondrow
 SCINIT:
 	.org $FF81 ; SCINIT Initialize "Screen output", (here only the serial monitor)
 	jmp do_scinit

@@ -2,6 +2,7 @@
 COUNTER .equ $20 ; counter for different things
 HNIBBLE .equ $21
 LNIBBLE .equ $22
+TEMPBYTE .equ $23
 RAMTOP .equ $30 ; store the page of the last RAM ($30 is the low adress)
 TEMP_VEC .equ $32 ; store a temporary vector, like the address to the string to output, $32 low, $33 hi
 

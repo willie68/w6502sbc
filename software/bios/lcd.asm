@@ -118,6 +118,19 @@ lcd_secondrow: ; move cursor to second row
   	jsr lcd_instruction
 	pla
   	rts
+lcd_goto: ; move cursor to A row, X Column
+	pha
+  	cmp #$00
+	beq @docol
+  	lda $40
+@docol:
+	stx TEMPBYTE 
+	adc TEMPBYTE
+	ora #%10000000	
+	jsr lcd_instruction
+	pla
+  	rts
+
 lcd_home:; move cursor to first row
 	pha
 	;jsr lcd_wait
@@ -138,13 +151,13 @@ do_strout: ; output string, address of text hi: A, lo: X
     stx TEMP_VEC
 	sta TEMP_VEC+1
   	ldy #0
-strprint:
+@strprint:
   	lda (TEMP_VEC),y
-  	beq strreturn
+  	beq @strreturn
   	jsr do_chrout
   	iny
-  	jmp strprint
-strreturn:
+  	jmp @strprint
+@strreturn:
 	ply
 	rts
 
@@ -174,8 +187,8 @@ do_numout:  ; output a number in decimal, A: hi byte, X lo byte
             ; by Michael T. Barry 2017.07.07. Free to
             ; copy, use and modify, but without warranty
 @iout:
-    stx $a0 ; low-order half
-    sta $a1 ; high-order half
+    stx LNIBBLE ; low-order half
+    sta HNIBBLE ; high-order half
     lda #0 ; null delimiter for print
     pha ; repeat {
 @iout2: ; divide by 10
@@ -187,15 +200,15 @@ do_numout:  ; output a number in decimal, A: hi byte, X lo byte
     sbc #5 ; yes: update partial
 ; remainder, set carry
 @iout4:
-    rol $a0 ; gradually replace dividend
-    rol $a1 ; with the quotient
+    rol LNIBBLE ; gradually replace dividend
+    rol HNIBBLE ; with the quotient
     rol ; A is gradually replaced
     dex ; with the remainder
     bne @iout3 ; loop 16 times
-    ora #$b0 ; convert remainder to ASCII
+    ora #$30 ; convert remainder to ASCII
     pha ; stack digits in ascending
-    lda $a0 ; order ('0' for zero)
-    ora $a1
+    lda LNIBBLE ; order ('0' for zero)
+    ora HNIBBLE
     bne @iout2 ; } until quotient is 0
     pla
 @iout5:
@@ -221,11 +234,20 @@ do_bhexout:
     lsr
     lsr
     lsr
+	and #$0F
     ora #$30        ; add "0"
+	cmp #$3A
+	bmi @bh1
+	adc #$06
+@bh1:
     jsr do_chrout
     pla             ; output lo nibble of hi byte
     and #$0F
     ora #$30        ; add "0"
+	cmp #$3A
+	bmi @bh2
+	adc #$06
+@bh2:
     jsr do_chrout
     pla
     rts
