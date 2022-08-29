@@ -4,6 +4,7 @@
 .memory "fill", $E000, $2000, $ea
 .org $E000
 .include "io.asm" 
+.include "zp.asm"
 
 ;----- constant definitions -----
 ;constants for board specifig
@@ -14,24 +15,13 @@ LCD_RW .equ %01000000
 LCD_RS .equ %00100000
 
 
-; ZERO Page registers $0000.. $00ff
-COUNTER .equ $20 ; counter for different things
-HNIBBLE .equ $21
-LNIBBLE .equ $22
-RAMTOP .equ $30 ; store the page of the last RAM ($30 is the low adress)
-
-JTIME .equ $A0 ; to $A2 three bytes jiffy time, higher two bytes of the 3 bytes of the 1/50 secs of a day. 24h * 60m * 60s * 50, 4.320.000 ticks per day
-
-IN_READ .equ $80
-IN_WRITE .equ $81
-TEMP_VEC .equ $32 ; store a temporary vector, like the address to the string to output, $32 low, $33 hi
 ; Stack  $0100.. $01ff
-SPAGE .equ $0100
+STACK .equ $0100
 ; Bios data
 BIOSPAGE .equ $0200
 IRQ_SRV .equ  $0214    ; $0214 LOW byte, $0215 HIGH byte for a external irq service routine
-NMI_SRV .equ  $0216    ; $0216 LOW byte, $0217 HIGH byte for a external nmi service routine
-RTI_SRV .equ  $0218    ; every user irq or nmi routine should call this for returning from interrupt, jmp (RTI_SRV)
+BRK_SRV .equ  $0216    ; $0216 LOW byte, $0217 HIGH byte for a external nmi service routine
+NMI_SRV .equ  $0218    ; $0216 LOW byte, $0217 HIGH byte for a external nmi service routine
 IN_BUF_LEN .equ $0F    ; length of input buffer
 IN_BUFFER .equ $0280   ; 16 bytes of input buffer
 
@@ -60,6 +50,7 @@ do_reset: ; bios reset routine
     ldx #$ff ; set the stack pointer 
    	txs 
 
+	jsr do_srvinit ; cleanup the interrupt registers
 	jsr do_ioinit  ; initialise port A an timer of VIA
 	jsr do_scinit
 	
@@ -72,7 +63,6 @@ do_reset: ; bios reset routine
 
 	jsr lcd_clear
 	msg_out(message_srvinit)
-	jsr do_srvinit
 
 ;----- main -----
 	jsr lcd_clear
@@ -161,7 +151,7 @@ do_ramtas: ; initialising memory page 0, stack, bios, basic, lokking for the add
 	; clear memory on zeropage, stack, biospage, basicpage, determing the memory max page
 ramtas_l1:
 	sta $0000, y
-	sta SPAGE, y
+	sta STACK, y
 	sta BIOSPAGE, y
 	sta BASICPAGE, y
 	iny
@@ -195,10 +185,9 @@ do_restor: ; restoring interrupt vectors to 0
 	rts
 
 do_srvinit: ; saving the isr return adress to kernel page
-	lda <isr_end
-	sta RTI_SRV
-	lda >isr_end
-	sta RTI_SRV+1
+	stz NMI_SRV
+	stz IRQ_SRV
+	stz BRK_SRV
 	rts
 
 do_putin: ; adding something to the input ring buffer , its always overwriting
@@ -271,171 +260,7 @@ jtest:
 jiend:
 	rts
 
-; ---- Display routines ----
-do_scinit: 		; initialise LC-Display on port B
-	; D4..D7 on Port pins PB0..3
-	; RS; R/W and E on Port pins PB5, PB6, PB7
-	lda #$ff 	; Set all pins on port B to output
-  	sta VIA_DDRB
-	lda #0 		; all pins low
-	sta VIA_ORB
-
-	; reset the display, wait at least 15ms
-	lda #$58
-	jsr do_delay
-
-	; send 3 times the reset...
-  	lda #(%00000011 | LCD_E) ; 1. RESET
-	sta VIA_ORB
-	eor #LCD_E
-	sta VIA_ORB
-	lda #$1f
-	jsr do_delay
-
-  	lda #(%00000011 | LCD_E) ; 2. RESET
-	sta VIA_ORB
-	eor #LCD_E
-	sta VIA_ORB
-	lda #$01
-	jsr do_delay
-
-  	lda #(%00000011 | LCD_E) ; 3. RESET
-	sta VIA_ORB
-	eor #LCD_E
-	sta VIA_ORB
-	lda #$01
-	jsr do_delay
-
-  	lda #(%00000010 | LCD_E) ; Set 4-bit mode; 
-	sta VIA_ORB
-	eor #LCD_E
-	sta VIA_ORB
-	lda #$01
-	jsr do_delay
-
-	; after this command we can use the 4-Bit mode and we could use busy flag for former sync
-  	lda #%00101000 ; 2-line display; 5x8 font
-  	jsr lcd_instruction
-
-  	lda #%00001110 ; Display on; cursor on; blink off
-  	jsr lcd_instruction
-
-  	lda #%00000110 ; Increment and shift cursor; don't shift display
-  	jsr lcd_instruction
-
-  	lda #%00000010 ; Return home
-  	jsr lcd_instruction
-
-  	lda #%00000001 ; Clear display
-  	jsr lcd_instruction
-	rts
-
-lcd_wait: ; wait until the LCD is not busy
-	pha
-	lda #%11110000 ;set PORTB pins 0 - 3 as input
-	sta VIA_DDRB
-@lcdbusy:
-	lda #LCD_RW
-	sta VIA_ORB
-	ora #LCD_E
-	sta VIA_ORB
-	; loding high nibble with busy flag
-	lda VIA_ORB
-	sta HNIBBLE
-	lda #LCD_RW
-	sta VIA_ORB
-	ora #LCD_E
-	sta VIA_ORB
-	; getting the low nibble, address counter
-	lda VIA_ORB
-	sta LNIBBLE
-	lda #LCD_RW
-	sta VIA_ORB
-	lda HNIBBLE
-	and #%00001000 ; mask the busy flag
-	bne @lcdbusy
-	lda #$FF ; setting port to output again
-	sta VIA_DDRB
-	pla
-	rts
-
-lcd_instruction: ; sending A as an instruction to LCD
-	pha
-	pha
-	lsr
-	lsr
-	lsr
-	lsr
-	ora #LCD_E
-	sta VIA_ORB
-	eor #LCD_E
-	sta VIA_ORB
-	pla
-	and #$0f
-	ora #LCD_E
-	sta VIA_ORB
-	eor #LCD_E
-	sta VIA_ORB
-	pla
-	rts
-
-lcd_secondrow: ; move cursor to second row
-	pha
-  	;jsr lcd_wait
-  	lda #%10000000 + $40
-  	jsr lcd_instruction
-	pla
-  	rts
-lcd_home:; move cursor to first row
-	pha
-	;jsr lcd_wait
-	lda #%10000000 + $00
-	jsr lcd_instruction
-	pla
-	rts
-lcd_clear: ; clear entire LCD
-	pha
-	;jsr lcd_wait
-	lda #$00000001 ; Clear display
-  	jsr lcd_instruction
-	pla
-	rts
-
-do_strout: ; output string, address of text hi: A, lo: X
-	phy
-    stx TEMP_VEC
-	sta TEMP_VEC+1
-  	ldy #0
-strprint:
-  	lda (TEMP_VEC),y
-  	beq strreturn
-  	jsr do_chrout
-  	iny
-  	jmp strprint
-strreturn:
-	ply
-	rts
-
-do_chrout: ; output a single char to LCD, char in A
-	jsr lcd_wait
-	pha
-	; sending high nibble
-	lsr
-	lsr
-	lsr
-	lsr
-	ora #(LCD_RS | LCD_E)
-	sta VIA_ORB
-	eor #LCD_E
-	sta VIA_ORB
-
-	pla 
-	and #$0F
-	ora #(LCD_RS | LCD_E)
-	sta VIA_ORB
-	eor #LCD_E
-	sta VIA_ORB
-	rts
+.include "lcd.asm"
 
 ;------------------------------------------------------------------------------
 ; The count of outloops will be used from A.
@@ -455,6 +280,12 @@ do_delay:
     rts			; 6 clk 
 
 ;---- Interrupt service routines ----
+do_brk;
+	lda #$00
+	cmp >BRK_SRV
+	beq isr_end
+	jmp (BRK_SRV)
+
 do_nmi: ; nmi service routine
 	pha
 	phx
@@ -469,13 +300,20 @@ do_irq: ; irq service routine
 	pha
 	phx
 	phy
+	; check for brk
+	php					; put status to stack
+	pla					; get staus in A
+	and #$10
+	beq @irq1
+	jmp do_brk
 	; testing for timer 1, jiffy timer interrupt
-	bit VIA_IFR          ; Bit 6 copied to overflow flag
+@irq1	bit VIA_IFR          ; Bit 6 copied to overflow flag
   	bvc isr_no_timer1
 	lda VIA_T1CL         ; Clears the interrupt
 	jsr do_udtim
 isr_no_timer1:
 	; here do other isr stuff
+	
 	; look if an external irq service routine is set
 	lda #$00
 	cmp >IRQ_SRV
@@ -486,7 +324,18 @@ isr_end: ; this is the ending for all interrupt service routines
 	plx
 	pla
 	rti
-
+do_setirqsrv: ; setting an external irq routine for checking, A lo, X hi
+	sta IRQ_SRV
+	sty IRQ_SRV+1
+	rts
+do_setbrksrv: ; setting an external irq routine for checking, A lo, X hi
+	sta BRK_SRV
+	sty BRK_SRV+1
+	rts
+do_setnmisrv: ; setting an external irq routine for checking, A lo, X hi
+	sta NMI_SRV
+	sty NMI_SRV+1
+	rts
 
 ;----- Messages of the bios -----
 	message_w6502sbc: .asciiz "W6502SBC Welcome"
@@ -498,37 +347,50 @@ isr_end: ; this is the ending for all interrupt service routines
 ;----- jump table for bios routines -----
 jump_table: 
 
+STROUT:
 	.org $FF00 ; STROUT output string, A = high, X = low
 	jmp do_strout
-
+SCINIT:
 	.org $FF81 ; SCINIT Initialize "Screen output", (here only the serial monitor)
 	jmp do_scinit
-	
+IOINIT:
 	.org $FF84 ; IOINIT Initialize VIA & IRQ
 	jmp do_ioinit
-
+RAMTAS:
 	.org $FF87 ; RAMTAS RAM test and search memory end
 	jmp do_ramtas
-
+RESTORE:
 	.org $FF8A ; RESTOR restore default kernel vectors
 	jmp do_restor 
-
+SETIRQ:
+	.org $FFA0 ; SETIRQ set external irq vectors
+	jmp do_setirqsrv 
+SETBRK:
+	.org $FFA3 ; SETBRK set external brk vectors
+	jmp do_setbrksrv 
+SETNMI:
+	.org $FFA6 ; SETNMI set external nmi vectors
+	jmp do_setnmisrv 
+ISREND:
+	.org $FFA9 ; ISREND return from irq, nmi, brk
+	jmp isr_end 
+CHROUT:
 	.org $FFD2 ; CHROUT Output an character
 	jmp do_chrout
-
+SETTIM:
 	.org $FFDB ; SETTIM Set the Jiffy Clock
 	jmp do_settim
-
+RDTIM:
 	.org $FFDE ; RDTIM read the Jiffy Clock
 	jmp do_rdtim
-
+UDTIM:
 	.org $FFEA ; UDTIM Tick the Jiffy Clock
 	jmp do_udtim
-
+GETIN:
 	.org $FFE4 ; GETIN Read a byte from the input channel
 	jmp do_getin
-
-	.org $FFF3 ; IOBASE	Read the base address of I/O chips
+RDIOBS:
+	.org $FFF3 ; RDIOBS	Read the base address of I/O chips
 	jmp do_iobase
 
 ;----- cpu vectors -----
