@@ -5,6 +5,7 @@
 .org $E000
 .include "io.asm" 
 .include "zp.asm"
+.include "macros.asm"
 
 ;----- constant definitions -----
 ;constants for board specifig
@@ -25,25 +26,6 @@ BASICPAGE .equ $0300
 ; RAM start for testing
 RAMSTART .equ $0400
 
-;----- macros -----
-.macro msg_out(msg)
-	lda #>message_w6502sbc
-	ldx #<message_w6502sbc
-	jsr do_strout 
-	lda #" "
-	jsr do_chrout
-	lda #>msg
-	ldx #<msg
-	jsr do_strout 
-.endmacro
-
-.macro toggle_a()
-	pha
-	lda #$ff
-	sta VIA_ORA
-	stz VIA_ORA
-	pla
-.endmacro
 ;----- bios start code -----
 do_reset: ; bios reset routine 
     ldx #$ff ; set the stack pointer 
@@ -133,6 +115,14 @@ do_ioinit: ; initialise the timer for the jiffy clock
 	lda #>JIFFY_VIA_TIMER_LOAD
 	sta VIA_T1LH 
 	cli
+
+    ; ACIA setup
+    lda #$00
+    sta ACIA_STATUS
+    lda #$0b
+    sta ACIA_COMMAND
+    lda #$1f
+    sta ACIA_CONTROL
 
 	lda #$FF
 	sta VIA_DDRA
@@ -305,7 +295,7 @@ do_irq: ; irq service routine
 	; testing for timer 1, jiffy timer interrupt
 /*@irq1	bit VIA_IFR          ; Bit 6 copied to overflow flag
   	bvc isr_no_timer1
-	lda VIA_T1CL         ; Clears the interrupt
+	bit VIA_T1CL         ; Clears the interrupt
 */
 	jsr do_udtim
 	jmp isr_end

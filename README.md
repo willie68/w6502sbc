@@ -1,6 +1,8 @@
 # w6502sbc
 willies 6502 single board computer
 
+![w6502sbc](images/pcb_V1_4-bit_LCD.jpg)
+
 a 6502 sbc with the option to be used with a backplane as a module.
 
 I'm a bit sorry, but there are so many 6502 projects out there that I've taken the liberty of documenting this project (for the time being) only in German.
@@ -377,6 +379,31 @@ Eine Speicherkarte kann nun aber per NoLoROM Signal auch das LoROM ausschalten u
 Warum liegt das Signal nicht auf dem Bus? 
 Auf dem Bus macht das Signal keinen Sinn, es wird durch einen Port geschaltet. Dadurch kann man programatisch das ROM aus und einblenden. Für eine BusKarte macht das nur Sinn, wenn es das HiROM besetzt. Somit kann man dort auch die ROM Abschaltung implementieren. 
 
+# LC Display
+
+Als einfach Ausgabemöglichkeit ist an dem SBC ein 16x2 LC Display mit einem HD44780 komp. Controller angeschlossen. Ich habe hier den 4-Bit Modus gewählt, damit ich den Port A vom 6522 noch für andere Dinge verwenden kann. Im Rom gibt es entsprechende Ausgaberoutinen dafür.
+
+Das Display wird folgendermaßen angeschlossen:
+
+| LC Display | VIA  | Beschreibung                                |
+| ---------- | ---- | ------------------------------------------- |
+| VSS        | GND  | Masse                                       |
+| VDD        | +5V  | +5V                                         |
+| Vo         |      | Kontrast an 10k Poti,, zwischen +5V und GND |
+| RS         | PB5  | Register                                    |
+| R/W        | PB6  | Read/Write                                  |
+| E          | PB7  | Enable                                      |
+| D0         | GND  |                                             |
+| D1         | GND  |                                             |
+| D2         | GND  |                                             |
+| D3         | GND  |                                             |
+| D4         | PB0  |                                             |
+| D5         | PB1  |                                             |
+| D6         | PB2  |                                             |
+| D7         | PB3  |                                             |
+| A          | +5V  | Hintergrundbeleuchtung                      |
+| K          | GND  | Hintergrundbeleuchtung                      |
+
 # Bauteile
 
 Die verschiedenen Bauteile zu bekommen war eine kleine Herausforderung.
@@ -404,6 +431,8 @@ ATF16V8 CPLD
 1MHZ Quarzoszilator
 
 DS1813 EconoReset
+
+16x2 LC Display
 
 div Widerständer, Switches, Jumper...
 
