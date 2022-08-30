@@ -112,8 +112,10 @@ do_ioinit: ; initialise the timer for the jiffy clock
 	; setting the vias timer 1 in free run mode, jiffy timer, load with 
 	lda #<JIFFY_VIA_TIMER_LOAD
 	sta VIA_T1LL 
+	sta VIA_T1CL
 	lda #>JIFFY_VIA_TIMER_LOAD
-	sta VIA_T1LH 
+	sta VIA_T1LH
+	sta VIA_T1CH
 	cli
 
     ; ACIA setup
