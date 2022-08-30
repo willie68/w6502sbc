@@ -122,7 +122,7 @@ lcd_goto: ; move cursor to A row, X Column
 	pha
   	cmp #$00
 	beq @docol
-  	lda $40
+  	lda #$3F
 @docol:
 	stx TEMPBYTE 
 	adc TEMPBYTE
@@ -229,19 +229,17 @@ do_hexout: ; output a number in hex with leading $, A: hi byte, X lo byte
     rts
 do_bhexout:
     pha             ; output hi nibble
-    pha
     lsr
-    lsr
-    lsr
-    lsr
-	and #$0F
-    ora #$30        ; add "0"
-	cmp #$3A
-	bmi @bh1
-	adc #$06
-@bh1:
-    jsr do_chrout
+	lsr
+	lsr
+	lsr
+	jsr do_nhexout
     pla             ; output lo nibble of hi byte
+	jsr do_nhexout
+    rts
+
+do_nhexout: ; output the lower nibble as hex
+    pha             ; output hi nibble
     and #$0F
     ora #$30        ; add "0"
 	cmp #$3A

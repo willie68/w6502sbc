@@ -48,13 +48,8 @@ do_reset: ; bios reset routine
 ;	jsr do_ramtas
 
 	jsr lcd_clear
-	msg_out(message_srvinit)
-
-	jsr lcd_clear
 	msg_out(message_ready)
 
-	jsr lcd_clear
-	msg_out(message_showdec)
 /*	jsr lcd_secondrow
 	lda #$04					; output 1059 = $0423
 	ldx #$23
@@ -68,40 +63,27 @@ do_reset: ; bios reset routine
 */
 	stz COUNTER
 ;----- main -----
+.macro output(col)
+
+	lda #$01
+	ldx #col
+	jsr lcd_goto 
+
+	lda #col
+	jsr do_nhexout
+.endmacro
+
+CNT .var 0
+.loop 16
+	output(CNT)
+	CNT = CNT + 1
+.endloop
+
+
 main_loop:
-	jsr do_udtim
-
-	lda #$01
-	ldx #$06
-	jsr lcd_goto
-	lda JTIME					; output 1059 = $0423
-	jsr do_bhexout
-
-	lda #$01
-	ldx #$09
-	jsr lcd_goto
-	lda JTIME+1					; output 1059 = $0423
-	jsr do_bhexout
-
-	lda #$01
-	ldx #$0C
-	jsr lcd_goto
-	lda JTIME+2					; output 1059 = $0423
-	jsr do_bhexout
-
-	lda #$01
-	ldx #$0F
-	jsr lcd_goto
-	lda JTIME+1
-	ldx JTIME+2
-	jsr do_numout
-
-;	lda #$01
-;	jsr do_delay
 	jmp main_loop
 
 do_ioinit: ; initialise the timer for the jiffy clock
-    sei
 	lda #%01111111
   	sta VIA_IER  ; disable all interrupts
 	; setting free run mode with interrupts enabled
@@ -116,16 +98,15 @@ do_ioinit: ; initialise the timer for the jiffy clock
 	lda #>JIFFY_VIA_TIMER_LOAD
 	sta VIA_T1LH
 	sta VIA_T1CH
-	cli
 
     ; ACIA setup
-    lda #$00
+/*    lda #$00
     sta ACIA_STATUS
     lda #$0b
     sta ACIA_COMMAND
     lda #$1f
     sta ACIA_CONTROL
-
+*/
 	lda #$FF
 	sta VIA_DDRA
 	lda #$00
@@ -278,8 +259,8 @@ do_nmi: ; nmi service routine
 	phx
 	phy
 	; look if an external nmi service routine is set
-	lda #$00
-	cmp >NMI_SRV
+	lda NMI_SRV
+	cmp #$00
 	beq isr_end
 	jmp (NMI_SRV)
 	 
@@ -295,18 +276,18 @@ do_irq: ; irq service routine
 	jmp do_brk
 */
 	; testing for timer 1, jiffy timer interrupt
-/*@irq1	bit VIA_IFR          ; Bit 6 copied to overflow flag
-  	bvc isr_no_timer1
-	bit VIA_T1CL         ; Clears the interrupt
-*/
+@irq1:
+	bit VIA_IFR          	; Bit 6 copied to overflow flag
+  	bvc @isr_no_timer1
+
+	bit VIA_T1CL         	; Clears the interrupt
 	jsr do_udtim
 	jmp isr_end
-isr_no_timer1:
+@isr_no_timer1:
 	; here do other isr stuff
-	
 	; look if an external irq service routine is set
-	lda #$00
-	cmp >IRQ_SRV
+	lda IRQ_SRV
+	cmp #$00
 	beq isr_end
 	jmp (IRQ_SRV)
 isr_end: ; this is the ending for all interrupt service routines
@@ -314,6 +295,7 @@ isr_end: ; this is the ending for all interrupt service routines
 	plx
 	pla
 	rti
+
 do_setirqsrv: ; setting an external irq routine for checking, A hi, X lo
 	stx IRQ_SRV
 	sta IRQ_SRV+1

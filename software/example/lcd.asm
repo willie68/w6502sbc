@@ -202,6 +202,6 @@ do_delay:
     dey			; 2 clk
 	bne @inner	; 2 + 1 clk (for the jump back)
     sbc #$01	; 2 clk
-    bne @outer	; 2 + 1 clk exit when COUNTER is less than 0
+    bne @outer	; 2 + 1 clk exit when sless than 0
     ply			; 4 clk
     rts			; 6 clk 
