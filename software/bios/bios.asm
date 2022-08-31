@@ -107,31 +107,31 @@ do_ramtas: ; initialising memory page 0, stack, bios, basic, lokking for the add
 	lda #$00
 	ldy #$FF
 	; clear memory on zeropage, stack, biospage, basicpage, determing the memory max page
-ramtas_l1:
+@ramtas_l1:
 	sta $0000, y
 	sta BIOSPAGE, y
 	sta BASICPAGE, y
 	dey
-	bne ramtas_l1
+	bne @ramtas_l1
 	tay						; set Y register to 0
 	; checking 0 byte from every page to get the last RAM Page
 	stz RAMTOP     			; put a 0 into $30 for later indirect acces to $30 $31 for RAM Test adress
 	lda >RAMSTART-1    		;
 	sta RAMTOP+1 			;after this, the RAMTOP should be set to $0400
-ramtas_l2:
+@ramtas_l2:
 	inc RAMTOP+1
 	cmp #>IOBASE
-	bcs ramtas_ramtop
+	bcs @ramtas_ramtop
 	lda #$55         		; test with 01010101
 	sta (RAMTOP), y
 	cmp (RAMTOP), y
-	bne ramtas_ramtop		; not equal than there seems to be no RAM
+	bne @ramtas_ramtop		; not equal than there seems to be no RAM
 	rol				 		; test with 10101010
 	sta (RAMTOP), y
 	cmp (RAMTOP), y
-	bne ramtas_ramtop
-	jmp ramtas_l2
-ramtas_ramtop:
+	bne @ramtas_ramtop
+	jmp @ramtas_l2
+@ramtas_ramtop:
 	dec RAMTOP+1  ; found the last RAM page at adress one page before 
 	rts
 
