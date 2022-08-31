@@ -31,36 +31,23 @@ do_reset: ; bios reset routine
     ldx #$ff ; set the stack pointer 
    	txs 
 
+	; reset jiffy clock
 	lda #$00
 	ldx #$00
 	ldy #$00
 	jsr do_settim
 
-	jsr do_srvinit ; cleanup the interrupt registers
-	jsr do_ioinit  ; initialise port A an timer of VIA
-	jsr do_scinit
-
+	jsr do_srvinit 	; cleanup the interrupt registers
+	jsr do_ramtas 	; initialise ram
+	jsr do_ioinit  	; initialise VIA
+	jsr do_scinit 	; initialise display
 
 	;jsr lcd_clear
 	msg_out(message_welcome)
-;	jsr lcd_clear
-;	msg_out(message_ramtas)
-;	jsr do_ramtas
 
 	jsr lcd_clear
 	msg_out(message_ready)
 
-/*	jsr lcd_secondrow
-	lda #$04					; output 1059 = $0423
-	ldx #$23
-	jsr do_numout
-	lda #" "
-	jsr do_chrout
-	lda #$04					; output 1059 = $0423
-	jsr do_hexout
-	lda #" "
-	jsr do_chrout
-*/
 	stz COUNTER
 ;----- main -----
 .macro output(col)
@@ -73,12 +60,15 @@ do_reset: ; bios reset routine
 	jsr do_nhexout
 .endmacro
 
-CNT .var 0
-.loop 16
-	output(CNT)
-	CNT = CNT + 1
-.endloop
-
+	jsr lcd_secondrow
+	lda #>message_memory
+	ldx #<message_memory
+	jsr do_strout 
+	lda RAMTOP+1
+	adc #$01
+	sbc #>RAMSTART
+	ldx #$0
+	jsr do_numout 
 
 main_loop:
 	jmp main_loop
@@ -115,27 +105,28 @@ do_ioinit: ; initialise the timer for the jiffy clock
 
 do_ramtas: ; initialising memory page 0, stack, bios, basic, lokking for the address of the last RAM page, write it to RAMTOP
 	lda #$00
-	tay
+	ldy #$FF
 	; clear memory on zeropage, stack, biospage, basicpage, determing the memory max page
 ramtas_l1:
 	sta $0000, y
-	sta STACK, y
 	sta BIOSPAGE, y
 	sta BASICPAGE, y
-	iny
+	dey
 	bne ramtas_l1
+	tay						; set Y register to 0
 	; checking 0 byte from every page to get the last RAM Page
-	tay
-	stz RAMTOP     	; put a 0 into $30 for later indirect acces to $30 $31 for RAM Test adress
-	lda >RAMSTART-1    	;
+	stz RAMTOP     			; put a 0 into $30 for later indirect acces to $30 $31 for RAM Test adress
+	lda >RAMSTART-1    		;
 	sta RAMTOP+1 			;after this, the RAMTOP should be set to $0400
 ramtas_l2:
 	inc RAMTOP+1
-	lda #$55         ; test with 01010101
+	cmp #>IOBASE
+	bcs ramtas_ramtop
+	lda #$55         		; test with 01010101
 	sta (RAMTOP), y
 	cmp (RAMTOP), y
-	bne ramtas_ramtop
-	rol				 ; test with 10101010
+	bne ramtas_ramtop		; not equal than there seems to be no RAM
+	rol				 		; test with 10101010
 	sta (RAMTOP), y
 	cmp (RAMTOP), y
 	bne ramtas_ramtop
@@ -317,10 +308,14 @@ do_setnmisrv: ; setting an external irq routine for checking, A hi, X lo
 	message_ready: .asciiz "ready"
 	message_showdec: .asciiz "show dec"
 	message_britta: .asciiz "Hallo Britta"
+	message_memory: .asciiz "free mem: "
 
 ;----- jump table for bios routines -----
-jump_table: 
-
+; check if we have enough memory for the jump tables
+.if (* > $FF00)
+  .error "The current memory address is " * ", which is too high..."
+.endif
+;jump_table
 STROUT:
 	.org $FF00 ; STROUT output string, A = high, X = low
 	jmp do_strout
