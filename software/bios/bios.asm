@@ -40,6 +40,7 @@ do_reset: ; bios reset routine
 	jsr do_srvinit 	; cleanup the interrupt registers
 	jsr do_ramtas 	; initialise ram
 	jsr do_ioinit  	; initialise VIA
+	jsr do_serinit  	; initialise VIA
 	jsr do_scinit 	; initialise display
 
 	;jsr lcd_clear
@@ -59,6 +60,16 @@ do_reset: ; bios reset routine
 	lda #col
 	jsr do_nhexout
 .endmacro
+/*
+	lda #>message_w6502sbc
+	ldx #<message_w6502sbc
+	jsr do_serstrout
+	lda #" "
+	jsr do_serout
+	lda #>message_ready
+	ldx #<message_ready
+	jsr do_serstrout
+*/
 
 	jsr lcd_secondrow
 	lda #>message_memory
@@ -71,6 +82,27 @@ do_reset: ; bios reset routine
 	jsr do_numout 
 
 main_loop:
+	jsr lcd_clear
+	msg_out(message_ready)
+	jsr lcd_secondrow
+	
+	lda ACIA_STATUS
+	jsr do_bhexout
+
+@SEROUTL1:
+    lda  ACIA_STATUS    ;Read ACIA status register
+    and  #%00010000     ;Isolate transmit data register status bit
+    beq  @SEROUTL1      ;LOOP back to COUTL IF transmit data register is full
+
+	lda #"."
+	sta ACIA_TX
+
+	lda ACIA_STATUS
+	jsr do_bhexout
+
+	lda #$00
+	jsr do_delay
+
 	jmp main_loop
 
 do_ioinit: ; initialise the timer for the jiffy clock
@@ -89,14 +121,6 @@ do_ioinit: ; initialise the timer for the jiffy clock
 	sta VIA_T1LH
 	sta VIA_T1CH
 
-    ; ACIA setup
-/*    lda #$00
-    sta ACIA_STATUS
-    lda #$0b
-    sta ACIA_COMMAND
-    lda #$1f
-    sta ACIA_CONTROL
-*/
 	lda #$FF
 	sta VIA_DDRA
 	lda #$00
@@ -219,6 +243,7 @@ jtest:
 jiend:
 	rts
 
+.include "seriell.asm"
 .include "lcd.asm"
 
 ;------------------------------------------------------------------------------

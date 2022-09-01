@@ -1,3 +1,15 @@
+do_serinit:
+    pha
+    ; ACIA setup
+    lda #$00
+    sta ACIA_STATUS
+    lda #%00001011			; no parity, no echo, transmit irq disabled, no receiver irq, DTR High
+    sta ACIA_COMMAND
+    lda #%00011111			; 8-bit, 1 Stop bit, Baudrate, 19200 Baud
+    sta ACIA_CONTROL
+    pla
+    rts
+
 do_serout:
     pha                 ;Save ACCUMULATOR on STACK
 @SEROUTL1:
@@ -7,3 +19,26 @@ do_serout:
     pla                 ;ELSE, restore ACCUMULATOR from STACK
     sta  ACIA_TX        ;Write byte to ACIA transmit data register
     rts
+
+do_serin:
+    lda #$08
+@SERINL1:
+    bit ACIA_STATUS     ; Check to see if the buffer is full
+    beq @SERINL1
+    lda ACIA_RX
+    rts
+
+do_serstrout: ; output string, address of text hi: A, lo: X
+	phy
+    stx TEMP_VEC
+	sta TEMP_VEC+1
+  	ldy #0
+@serprint:
+  	lda (TEMP_VEC),y
+  	beq @serreturn
+  	jsr do_serout
+  	iny
+  	jmp @serprint
+@serreturn:
+	ply
+	rts
