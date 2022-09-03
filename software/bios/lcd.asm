@@ -1,5 +1,5 @@
 ; constants for LCD
-LCD_E  .equ %10000000
+LCD_E  .equ %00010000
 LCD_RW .equ %01000000
 LCD_RS .equ %00100000
 
