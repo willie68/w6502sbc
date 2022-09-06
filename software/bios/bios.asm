@@ -85,23 +85,6 @@ main_loop:
 	jsr lcd_clear
 	msg_out(message_ready)
 	jsr lcd_secondrow
-	
-	lda ACIA_STATUS
-	jsr do_bhexout
-
-@SEROUTL1:
-    lda  ACIA_STATUS    ;Read ACIA status register
-    and  #%00010000     ;Isolate transmit data register status bit
-    beq  @SEROUTL1      ;LOOP back to COUTL IF transmit data register is full
-
-	lda #"."
-	sta ACIA_TX
-
-	lda ACIA_STATUS
-	jsr do_bhexout
-
-	lda #$00
-	jsr do_delay
 
 	jmp main_loop
 
@@ -243,7 +226,7 @@ jtest:
 jiend:
 	rts
 
-.include "seriell.asm"
+.include "serspi.asm"
 .include "lcd.asm"
 
 ;------------------------------------------------------------------------------
