@@ -43,7 +43,7 @@ spibyte:
 				        ; line.
 	rol SPI_WRITEB
 	bcc @writing_zero_bit
-	ora #%00000100		; write a 1 bit to the output line.
+	ora #%00000010		; write a 1 bit to the output line.
 @writing_zero_bit:
 		
  	sta VIA_ORA    	    ; write data back to the port
