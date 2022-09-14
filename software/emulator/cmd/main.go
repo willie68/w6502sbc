@@ -45,11 +45,12 @@ func main() {
 	}(ch)
 
 	//var b []byte = make([]byte, 1)
-	for {
+	end := false
+	for !end {
 		select {
-		case c, _ := <-ch:
-			//			os.Stdin.Read(b)
+		case c := <-ch:
 			if c == 'x' {
+				end = true
 				break
 			}
 			switch c {
@@ -60,7 +61,8 @@ func main() {
 			case '\r':
 				break
 			default:
-				w6502sbc.Step()
+				res := w6502sbc.Step()
+				fmt.Println(res)
 				fmt.Printf("Adr: $%.4X, SP: $%.2X, A: $%.2X, X: $%.2X, Y: $%.2X\r\n", w6502sbc.Adr(), w6502sbc.SP(), w6502sbc.A(), w6502sbc.X(), w6502sbc.Y())
 				fmt.Print("x for exit\r\n>")
 			}

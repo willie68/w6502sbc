@@ -1,6 +1,8 @@
 package emulator
 
 import (
+	"fmt"
+
 	log "github.com/willie68/w6502sbc/tree/main/software/emulator/internal/logging"
 )
 
@@ -86,21 +88,29 @@ func (e *emu6502) NMI() {
 func (e *emu6502) IRQ() {
 }
 
-func (e *emu6502) Step() {
+func (e *emu6502) Step() string {
+	output := ""
+	output = fmt.Sprintf("$%.4x ", e.address)
 	cmd := e.getMnemonic()
+	output = output + fmt.Sprintf("%.2x ", cmd)
+
 	switch cmd {
 	case 0x8d: // STA $0000
+
 		lo := e.getMnemonic()
 		hi := e.getMnemonic()
 		adr := uint16(hi)*256 + uint16(lo)
 		e.setMemory(adr, e.a)
+		output = output + fmt.Sprintf("%.2x %.2x     sta $%.4x", lo, hi, adr)
 	case 0xa9: // LDA #
 		e.a = e.getMnemonic()
 		e.zf = e.a == 0
 		e.nf = (e.a & 0x80) > 0
+		output = output + fmt.Sprintf("%.2x        lda #$%.2x", e.a, e.a)
 	case 0xea: // NOP
 		break
 	}
+	return output
 }
 
 func (e *emu6502) Adr() uint16 {
