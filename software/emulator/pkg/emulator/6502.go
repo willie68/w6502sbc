@@ -95,8 +95,45 @@ func (e *emu6502) Step() string {
 	output = output + fmt.Sprintf("%.2x ", cmd)
 
 	switch cmd {
+	case 0x0a: // asl
+		e.cf = (e.a & 0x80) > 0
+		e.a = e.a << 1
+		e.zf = e.a == 0
+		e.nf = (e.a & 0x80) > 0
+		output = output + "           asl"
+	case 0x2a: // rol
+		tmp := e.cf
+		e.cf = (e.a & 0x80) > 0
+		e.a = e.a << 1
+		if tmp {
+			e.a = e.a | 0x01
+		}
+		e.zf = e.a == 0
+		e.nf = (e.a & 0x80) > 0
+		output = output + "           rol"
+	case 0x4c: // JMP $0000
+		lo := e.getMnemonic()
+		hi := e.getMnemonic()
+		adr := uint16(hi)*256 + uint16(lo)
+		output = output + fmt.Sprintf("%.2x %.2x     jmp $%.4x", lo, hi, adr)
+		e.address = adr
+	case 0x4a: // lsr
+		e.cf = (e.a & 0x01) > 0
+		e.a = e.a >> 1
+		e.zf = e.a == 0
+		e.nf = (e.a & 0x80) > 0
+		output = output + "           lsr"
+	case 0x6a: // ror
+		tmp := e.cf
+		e.cf = (e.a & 0x01) > 0
+		e.a = e.a >> 1
+		if tmp {
+			e.a = e.a | 0x80
+		}
+		e.zf = e.a == 0
+		e.nf = (e.a & 0x80) > 0
+		output = output + "           ror"
 	case 0x8d: // STA $0000
-
 		lo := e.getMnemonic()
 		hi := e.getMnemonic()
 		adr := uint16(hi)*256 + uint16(lo)
@@ -108,7 +145,9 @@ func (e *emu6502) Step() string {
 		e.nf = (e.a & 0x80) > 0
 		output = output + fmt.Sprintf("%.2x        lda #$%.2x", e.a, e.a)
 	case 0xea: // NOP
-		break
+		output = output + "           nop"
+	default:
+		output = output + "           illegal opcode"
 	}
 	return output
 }
