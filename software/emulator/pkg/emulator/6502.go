@@ -91,63 +91,18 @@ func (e *emu6502) IRQ() {
 func (e *emu6502) Step() string {
 	output := ""
 	output = fmt.Sprintf("$%.4x ", e.address)
-	cmd := e.getMnemonic()
-	output = output + fmt.Sprintf("%.2x ", cmd)
+	mne := e.getMnemonic()
+	output = output + fmt.Sprintf("%.2x ", mne)
 
-	switch cmd {
-	case 0x0a: // asl
-		e.cf = (e.a & 0x80) > 0
-		e.a = e.a << 1
-		e.zf = e.a == 0
-		e.nf = (e.a & 0x80) > 0
-		output = output + "           asl"
-	case 0x2a: // rol
-		tmp := e.cf
-		e.cf = (e.a & 0x80) > 0
-		e.a = e.a << 1
-		if tmp {
-			e.a = e.a | 0x01
+	fct := functions[mne]
+	if fct != nil {
+		res := fct(e)
+		output = output + res
+	} else {
+		switch mne {
+		default:
+			output = output + "           illegal opcode"
 		}
-		e.zf = e.a == 0
-		e.nf = (e.a & 0x80) > 0
-		output = output + "           rol"
-	case 0x4c: // JMP $0000
-		lo := e.getMnemonic()
-		hi := e.getMnemonic()
-		adr := uint16(hi)*256 + uint16(lo)
-		output = output + fmt.Sprintf("%.2x %.2x     jmp $%.4x", lo, hi, adr)
-		e.address = adr
-	case 0x4a: // lsr
-		e.cf = (e.a & 0x01) > 0
-		e.a = e.a >> 1
-		e.zf = e.a == 0
-		e.nf = (e.a & 0x80) > 0
-		output = output + "           lsr"
-	case 0x6a: // ror
-		tmp := e.cf
-		e.cf = (e.a & 0x01) > 0
-		e.a = e.a >> 1
-		if tmp {
-			e.a = e.a | 0x80
-		}
-		e.zf = e.a == 0
-		e.nf = (e.a & 0x80) > 0
-		output = output + "           ror"
-	case 0x8d: // STA $0000
-		lo := e.getMnemonic()
-		hi := e.getMnemonic()
-		adr := uint16(hi)*256 + uint16(lo)
-		e.setMemory(adr, e.a)
-		output = output + fmt.Sprintf("%.2x %.2x     sta $%.4x", lo, hi, adr)
-	case 0xa9: // LDA #
-		e.a = e.getMnemonic()
-		e.zf = e.a == 0
-		e.nf = (e.a & 0x80) > 0
-		output = output + fmt.Sprintf("%.2x        lda #$%.2x", e.a, e.a)
-	case 0xea: // NOP
-		output = output + "           nop"
-	default:
-		output = output + "           illegal opcode"
 	}
 	return output
 }

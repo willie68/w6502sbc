@@ -21,3 +21,5 @@ software/*/debug*.txt
 software/*/*.bin
 
 *.bin
+
+*.exe
