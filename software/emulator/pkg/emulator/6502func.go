@@ -11,6 +11,7 @@ var functions = []func(*emu6502) string{
 	0x8a: txa,
 	0x8d: sta_abs,
 	0x98: tya,
+	0x9a: txs,
 	0xa0: ldy_direct,
 	0xa1: lda_ind_x,
 	0xa2: ldx_direct,
@@ -24,6 +25,7 @@ var functions = []func(*emu6502) string{
 	0xb1: lda_ind_y,
 	0xb5: lda_zp_x,
 	0xb9: lda_abs_y,
+	0xba: tsx,
 	0xbd: lda_abs_x,
 	0xea: nop,
 	0xff: nil,
@@ -56,6 +58,20 @@ func txa(e *emu6502) string {
 	e.zf = e.a == 0
 	e.nf = (e.a & 0x80) > 0
 	return "           txa"
+}
+
+func tsx(e *emu6502) string {
+	e.x = e.sp
+	e.zf = e.x == 0
+	e.nf = (e.x & 0x80) > 0
+	return "           tsx"
+}
+
+func txs(e *emu6502) string {
+	e.sp = e.x
+	e.zf = e.x == 0
+	e.nf = (e.x & 0x80) > 0
+	return "           txs"
 }
 
 func tya(e *emu6502) string {
