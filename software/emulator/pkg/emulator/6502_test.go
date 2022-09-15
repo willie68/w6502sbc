@@ -161,6 +161,58 @@ func TestLDA_ind_y(t *testing.T) {
 	testFlags(ast, nil, False, True, e)
 }
 
+func TestLDXY_direct(t *testing.T) {
+	ast := assert.New(t)
+	data := []uint8{
+		0x00, 0x80, 0x23,
+	}
+	e := getEmu(data)
+
+	ldx_direct(e)
+
+	ast.Equal(data[0], e.x)
+	ast.Equal(uint16(0xe001), e.address)
+	testFlags(ast, nil, True, False, e)
+
+	ldy_direct(e)
+
+	ast.Equal(data[1], e.y)
+	testFlags(ast, nil, False, True, e)
+
+	lda_direct(e)
+
+	ast.Equal(data[2], e.a)
+	testFlags(ast, nil, False, False, e)
+}
+
+func TestLDXY_abs(t *testing.T) {
+	ast := assert.New(t)
+	data := []uint8{
+		0x02, 0xe0, 0x00,
+		0x05, 0xe0, 0x80,
+		0x08, 0xe0, 0x23,
+	}
+	e := getEmu(data)
+
+	ldx_abs(e)
+
+	ast.Equal(data[2], e.x)
+	ast.Equal(uint16(0xe002), e.address)
+	testFlags(ast, nil, True, False, e)
+
+	e.address = 0xe003
+	ldy_abs(e)
+
+	ast.Equal(data[5], e.y)
+	testFlags(ast, nil, False, True, e)
+
+	e.address = 0xe006
+	lda_abs(e)
+
+	ast.Equal(data[8], e.a)
+	testFlags(ast, nil, False, False, e)
+}
+
 func TestTransfer(t *testing.T) {
 	ast := assert.New(t)
 	data := []uint8{
