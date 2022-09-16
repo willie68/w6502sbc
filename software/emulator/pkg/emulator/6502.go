@@ -21,6 +21,7 @@ type emu6502 struct {
 	zf      bool // zero flag
 	cf      bool // carry flag
 	nf      bool // negative flag
+	of      bool // overflow flag
 }
 
 type memory struct {
@@ -156,4 +157,26 @@ func (e *emu6502) setMemory(adr uint16, dt uint8) {
 		ramadr := adr - e.ram.start
 		e.ram.setMem(ramadr, dt)
 	}
+}
+
+func (e *emu6502) setFlags(v uint8, cf *bool, of *bool) {
+	e.zf = v == 0
+	e.nf = (v & 0x80) > 0
+	if cf != nil {
+		e.cf = *cf
+	}
+	if of != nil {
+		e.of = *of
+	}
+}
+
+func (e *emu6502) getAddress() (uint16, string) {
+	lo := e.getMnemonic()
+	hi := e.getMnemonic()
+	return uint16(hi)*256 + uint16(lo), fmt.Sprintf("%.2x %.2x", lo, hi)
+}
+
+func (e *emu6502) getZPAddress() (uint16, string) {
+	lo := e.getMnemonic()
+	return uint16(lo), fmt.Sprintf("%.2x   ", lo)
 }
