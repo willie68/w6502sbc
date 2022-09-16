@@ -159,3 +159,99 @@ func sbc_ind_y(e *emu6502) string {
 	sbc(e, v)
 	return str + fmt.Sprintf("        sbc ($%.2x),Y", adr)
 }
+
+func inc_abs(e *emu6502) string {
+	adr, str := e.getAddress()
+	v := e.getMemory(adr)
+	v++
+	e.setMemory(adr, v)
+	e.setFlags(v, nil, nil)
+	return str + fmt.Sprintf("   inc $%.4x", adr)
+}
+
+func inc_abs_x(e *emu6502) string {
+	adr, str := e.getAddress()
+	v := e.getMemory(adr + uint16(e.x))
+	v++
+	e.setMemory(adr, v)
+	e.setFlags(v, nil, nil)
+	return str + fmt.Sprintf("   inc $%.4x,X", adr)
+}
+
+func inc_zp(e *emu6502) string {
+	adr, str := e.getZPAddress()
+	v := e.getMemory(adr)
+	v++
+	e.setMemory(adr, v)
+	e.setFlags(v, nil, nil)
+	return str + fmt.Sprintf("   inc $%.2x", adr)
+}
+
+func inc_zp_x(e *emu6502) string {
+	adr, str := e.getZPAddress()
+	v := e.getMemory(adr + uint16(e.x))
+	v++
+	e.setMemory(adr, v)
+	e.setFlags(v, nil, nil)
+	return str + fmt.Sprintf("    inc $%.2x,X", adr)
+}
+
+func dec_abs(e *emu6502) string {
+	adr, str := e.getAddress()
+	v := e.getMemory(adr)
+	v--
+	e.setMemory(adr, v)
+	e.setFlags(v, nil, nil)
+	return str + fmt.Sprintf("   dec $%.4x", adr)
+}
+
+func dec_abs_x(e *emu6502) string {
+	adr, str := e.getAddress()
+	v := e.getMemory(adr + uint16(e.x))
+	v--
+	e.setMemory(adr, v)
+	e.setFlags(v, nil, nil)
+	return str + fmt.Sprintf("   dec $%.4x,X", adr)
+}
+
+func dec_zp(e *emu6502) string {
+	adr, str := e.getZPAddress()
+	v := e.getMemory(adr)
+	v--
+	e.setMemory(adr, v)
+	e.setFlags(v, nil, nil)
+	return str + fmt.Sprintf("   dec $%.2x", adr)
+}
+
+func dec_zp_x(e *emu6502) string {
+	adr, str := e.getZPAddress()
+	v := e.getMemory(adr + uint16(e.x))
+	v--
+	e.setMemory(adr, v)
+	e.setFlags(v, nil, nil)
+	return str + fmt.Sprintf("    dec $%.2x,X", adr)
+}
+
+func inx(e *emu6502) string {
+	e.x++
+	e.setFlags(e.x, nil, nil)
+	return "           inx"
+}
+
+func iny(e *emu6502) string {
+	e.y++
+	e.setFlags(e.y, nil, nil)
+	return "           iny"
+}
+
+func dex(e *emu6502) string {
+	e.x--
+	e.setFlags(e.x, nil, nil)
+	return "           dex"
+}
+
+func dey(e *emu6502) string {
+	e.y--
+	e.setFlags(e.y, nil, nil)
+	return "           dey"
+}
