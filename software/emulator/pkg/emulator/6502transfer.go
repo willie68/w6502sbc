@@ -97,6 +97,34 @@ func ldx_abs(e *emu6502) string {
 	return fmt.Sprintf("%.2x %.2x   ldx $%.4x", lo, hi, adr)
 }
 
+func ldx_abs_y(e *emu6502) string {
+	lo := e.getMnemonic()
+	hi := e.getMnemonic()
+	adr := uint16(hi)*256 + uint16(lo)
+	e.x = e.getMemory(adr + uint16(e.y))
+	e.zf = e.x == 0
+	e.nf = (e.x & 0x80) > 0
+	return fmt.Sprintf("%.2x %.2x   ldx $%.4x,Y", lo, hi, adr)
+}
+
+func ldx_zp(e *emu6502) string {
+	lo := e.getMnemonic()
+	adr := uint16(lo)
+	e.x = e.getMemory(adr)
+	e.zf = e.x == 0
+	e.nf = (e.x & 0x80) > 0
+	return fmt.Sprintf("%.2x        ldx $%.2x", lo, lo)
+}
+
+func ldx_zp_y(e *emu6502) string {
+	lo := e.getMnemonic()
+	adr := uint16(lo)
+	e.x = e.getMemory(adr + uint16(e.y))
+	e.zf = e.x == 0
+	e.nf = (e.x & 0x80) > 0
+	return fmt.Sprintf("%.2x        ldx $%.2x,Y", lo, adr)
+}
+
 func ldy_direct(e *emu6502) string {
 	e.y = e.getMnemonic()
 	e.zf = e.y == 0
@@ -112,4 +140,32 @@ func ldy_abs(e *emu6502) string {
 	e.zf = e.y == 0
 	e.nf = (e.y & 0x80) > 0
 	return fmt.Sprintf("%.2x %.2x   ldy $%.4x", lo, hi, adr)
+}
+
+func ldy_abs_x(e *emu6502) string {
+	lo := e.getMnemonic()
+	hi := e.getMnemonic()
+	adr := uint16(hi)*256 + uint16(lo)
+	e.y = e.getMemory(adr + uint16(e.x))
+	e.zf = e.y == 0
+	e.nf = (e.y & 0x80) > 0
+	return fmt.Sprintf("%.2x %.2x   ldy $%.4x,X", lo, hi, adr)
+}
+
+func ldy_zp(e *emu6502) string {
+	lo := e.getMnemonic()
+	adr := uint16(lo)
+	e.y = e.getMemory(adr)
+	e.zf = e.y == 0
+	e.nf = (e.y & 0x80) > 0
+	return fmt.Sprintf("%.2x        ldy $%.2x", lo, lo)
+}
+
+func ldy_zp_x(e *emu6502) string {
+	lo := e.getMnemonic()
+	adr := uint16(lo)
+	e.y = e.getMemory(adr + uint16(e.y))
+	e.zf = e.y == 0
+	e.nf = (e.y & 0x80) > 0
+	return fmt.Sprintf("%.2x        ldy $%.2x,X", lo, adr)
 }
