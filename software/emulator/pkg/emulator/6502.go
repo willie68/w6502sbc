@@ -18,10 +18,13 @@ type emu6502 struct {
 	a, x, y uint8
 	sp      uint8
 	address uint16
-	zf      bool // zero flag
 	cf      bool // carry flag
+	zf      bool // zero flag
+	jf      bool // iterrupt flag
+	df      bool // decimal flag
+	bf      bool // break flag
+	vf      bool // overflow flag
 	nf      bool // negative flag
-	of      bool // overflow flag
 }
 
 type memory struct {
@@ -87,6 +90,11 @@ func (e *emu6502) NMI() {
 }
 
 func (e *emu6502) IRQ() {
+	adr, _ := e.getAddress()
+	e.push(uint8(adr >> 8))
+	e.push(uint8(adr & 0x00ff))
+	st := e.getStatus()
+	e.push(st)
 }
 
 func (e *emu6502) Step() string {
@@ -159,14 +167,14 @@ func (e *emu6502) setMemory(adr uint16, dt uint8) {
 	}
 }
 
-func (e *emu6502) setFlags(v uint8, cf *bool, of *bool) {
+func (e *emu6502) setFlags(v uint8, cf *bool, vf *bool) {
 	e.zf = v == 0
 	e.nf = (v & 0x80) > 0
 	if cf != nil {
 		e.cf = *cf
 	}
-	if of != nil {
-		e.of = *of
+	if vf != nil {
+		e.vf = *vf
 	}
 }
 
@@ -179,4 +187,53 @@ func (e *emu6502) getAddress() (uint16, string) {
 func (e *emu6502) getZPAddress() (uint16, string) {
 	lo := e.getMnemonic()
 	return uint16(lo), fmt.Sprintf("%.2x   ", lo)
+}
+
+func (e *emu6502) push(v uint8) {
+	adr := uint16(0x0100) + uint16(e.sp)
+	e.setMemory(adr, v)
+	e.sp--
+}
+
+func (e *emu6502) pop() uint8 {
+	e.sp++
+	adr := uint16(0x0100) + uint16(e.sp)
+	return e.getMemory(adr)
+}
+
+func (e *emu6502) setStatus(st uint8) {
+	e.nf = (st & 0x80) > 0
+	e.vf = (st & 0x40) > 0
+	e.nf = true
+	e.bf = (st & 0x10) > 0
+	e.df = (st & 0x08) > 0
+	e.jf = (st & 0x04) > 0
+	e.zf = (st & 0x02) > 0
+	e.cf = (st & 0x01) > 0
+}
+
+func (e *emu6502) getStatus() uint8 {
+	st := uint8(0)
+	if e.nf {
+		st = st + 0x80
+	}
+	if e.vf {
+		st = st + 0x40
+	}
+	if e.bf {
+		st = st + 0x10
+	}
+	if e.df {
+		st = st + 0x08
+	}
+	if e.jf {
+		st = st + 0x04
+	}
+	if e.zf {
+		st = st + 0x02
+	}
+	if e.cf {
+		st = st + 0x01
+	}
+	return st
 }

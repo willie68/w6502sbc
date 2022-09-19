@@ -3,24 +3,24 @@ package emulator
 import "fmt"
 
 func adc(e *emu6502, v uint8) {
-	e.of = (((uint16(e.a) ^ uint16(v)) & 0x80) == 0)
+	e.vf = (((uint16(e.a) ^ uint16(v)) & 0x80) == 0)
 	t := uint16(e.a) + uint16(v)
 	if e.cf {
 		t++
 	}
 	e.a = uint8(t)
 	cf := t > 0x00ff
-	of := e.of
+	vf := e.vf
 	if t > 0x00ff {
 		if t > 0x017f {
-			of = false
+			vf = false
 		}
 	} else {
 		if t < 0x0080 {
-			of = false
+			vf = false
 		}
 	}
-	e.setFlags(e.a, &cf, &of)
+	e.setFlags(e.a, &cf, &vf)
 }
 
 func adc_direct(e *emu6502) string {
@@ -82,24 +82,24 @@ func adc_ind_y(e *emu6502) string {
 }
 
 func sbc(e *emu6502, v uint8) {
-	e.of = (((uint16(e.a) ^ uint16(v)) & 0x80) != 0)
+	e.vf = (((uint16(e.a) ^ uint16(v)) & 0x80) != 0)
 	t := uint16(0xff) + uint16(e.a) - uint16(v)
 	if e.cf {
 		t++
 	}
 	e.a = uint8(t)
 	cf := t > 0x00ff
-	of := e.of
+	vf := e.vf
 	if t > 0x00ff {
 		if t > 0x017f {
-			of = false
+			vf = false
 		}
 	} else {
 		if t < 0x0080 {
-			of = false
+			vf = false
 		}
 	}
-	e.setFlags(e.a, &cf, &of)
+	e.setFlags(e.a, &cf, &vf)
 }
 
 func sbc_direct(e *emu6502) string {
