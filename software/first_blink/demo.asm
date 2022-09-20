@@ -9,7 +9,7 @@ do_reset:
 // setting up the 65C22 VIA
 l1:
 	lda #$ff
-	sec
+	clc
 	bcs l1
 	bcc l2
 	lda #$80

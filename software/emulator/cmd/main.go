@@ -33,7 +33,7 @@ func main() {
 	}
 	w6502sbc := emulator.NewEmu6502().WithROM(0xE000, dat).WithRAM(0x000, 0x7fff).Build()
 	w6502sbc.Start()
-	fmt.Printf("Adr: $%.4X, SP: $%.2X, A: $%.2X, X: $%.2X, Y: $%.2X\r\n", w6502sbc.Adr(), w6502sbc.SP(), w6502sbc.A(), w6502sbc.X(), w6502sbc.Y())
+	fmt.Printf("Adr: $%.4X, SP: $%.2X, A: $%.2X, X: $%.2X, Y: $%.2X, S: %08b\r\n", w6502sbc.Adr(), w6502sbc.SP(), w6502sbc.A(), w6502sbc.X(), w6502sbc.Y(), w6502sbc.ST())
 	fmt.Print("x for exit\r\n>")
 	ch := make(chan byte)
 	go func(ch chan byte) {
@@ -63,7 +63,7 @@ func main() {
 			default:
 				res := w6502sbc.Step()
 				fmt.Println(res)
-				fmt.Printf("Adr: $%.4X, SP: $%.2X, A: $%.2X, X: $%.2X, Y: $%.2X\r\n", w6502sbc.Adr(), w6502sbc.SP(), w6502sbc.A(), w6502sbc.X(), w6502sbc.Y())
+				fmt.Printf("Adr: $%.4X, SP: $%.2X, A: $%.2X, X: $%.2X, Y: $%.2X, S: %08b\r\n", w6502sbc.Adr(), w6502sbc.SP(), w6502sbc.A(), w6502sbc.X(), w6502sbc.Y(), w6502sbc.ST())
 				fmt.Print("x for exit\r\n>")
 			}
 		default:

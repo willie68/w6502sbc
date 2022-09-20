@@ -136,6 +136,10 @@ func (e *emu6502) Y() uint8 {
 	return e.y
 }
 
+func (e *emu6502) ST() uint8 {
+	return e.getStatus()
+}
+
 func (e *emu6502) readVector(adr uint16) uint16 {
 	lo := uint16(e.getMemory(adr))
 	hi := uint16(e.getMemory(adr + 1))

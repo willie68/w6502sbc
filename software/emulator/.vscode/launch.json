@@ -4,6 +4,7 @@
     // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "Run Emulator",
             "type": "go",
@@ -11,7 +12,7 @@
             "mode": "auto",
             "program": "${cwd}/cmd/main.go",
             "console": "integratedTerminal",
-            "args": ["-b", "${cwd}/first_blink.bin"]
+            "args": ["-b", "${cwd}/demo.bin"]
         }
     ]
 }
