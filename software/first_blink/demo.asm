@@ -18,6 +18,9 @@ l2:
 	rts
 
 do_nmi: NOP
+		pha
+		
+		pla
 		RTI
 	 
 do_irq: NOP

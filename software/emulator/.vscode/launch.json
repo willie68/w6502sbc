@@ -12,7 +12,7 @@
             "mode": "auto",
             "program": "${cwd}/cmd/main.go",
             "console": "integratedTerminal",
-            "args": ["-b", "${cwd}/demo.bin"]
+            "args": ["-b", "${cwd}/demo.bin", "-c"]
         }
     ]
 }

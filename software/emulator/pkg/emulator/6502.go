@@ -9,11 +9,13 @@ import (
 type build6502 struct {
 	highrom memory
 	ram     memory
+	c02     bool
 }
 
 type emu6502 struct {
-	highrom memory
-	ram     memory
+	functions []func(*emu6502) string
+	highrom   memory
+	ram       memory
 
 	a, x, y uint8
 	sp      uint8
@@ -45,7 +47,9 @@ func (m *memory) setMem(adr uint16, dt uint8) {
 }
 
 func NewEmu6502() build6502 {
-	return build6502{}
+	return build6502{
+		c02: false,
+	}
 }
 
 func (b build6502) WithRAM(start, end uint16) build6502 {
@@ -63,10 +67,19 @@ func (b build6502) With6522(adr uint16) build6502 {
 	return b
 }
 
+func (b *build6502) With65C02() {
+	b.c02 = true
+}
+
 func (b build6502) Build() emu6502 {
+	f := functions
+	if b.c02 {
+		f = append(f, cfunc...)
+	}
 	emu := emu6502{
-		highrom: b.highrom,
-		ram:     b.ram,
+		functions: f,
+		highrom:   b.highrom,
+		ram:       b.ram,
 	}
 	emu.init()
 	return emu

@@ -26,7 +26,7 @@ func adc(e *emu6502, v uint8) {
 func adc_direct(e *emu6502) string {
 	v := e.getMnemonic()
 	adc(e, v)
-	return "           adc"
+	return fmt.Sprintf("%.2x        adc #$%.2x", v, v)
 }
 
 func adc_abs(e *emu6502) string {
@@ -105,7 +105,7 @@ func sbc(e *emu6502, v uint8) {
 func sbc_direct(e *emu6502) string {
 	v := e.getMnemonic()
 	sbc(e, v)
-	return "           sbc"
+	return fmt.Sprintf("%.2x        sbc #$%.2x", v, v)
 }
 
 func sbc_abs(e *emu6502) string {

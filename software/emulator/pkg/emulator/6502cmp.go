@@ -11,7 +11,7 @@ func i_cmp(e *emu6502, v1 uint8, v2 uint8) {
 func cmp_direct(e *emu6502) string {
 	v := e.getMnemonic()
 	i_cmp(e, e.a, v)
-	return fmt.Sprintf("           cmp #$%.2x", v)
+	return fmt.Sprintf("%.2x        cmp #$%.2x", v, v)
 }
 
 func cmp_abs(e *emu6502) string {
@@ -69,7 +69,7 @@ func cmp_ind_y(e *emu6502) string {
 func cpx_direct(e *emu6502) string {
 	v := e.getMnemonic()
 	i_cmp(e, e.x, v)
-	return fmt.Sprintf("           cpx #$%.2x", v)
+	return fmt.Sprintf("%.2x        cpx #$%.2x", v, v)
 }
 
 func cpx_abs(e *emu6502) string {
@@ -89,7 +89,7 @@ func cpx_zp(e *emu6502) string {
 func cpy_direct(e *emu6502) string {
 	v := e.getMnemonic()
 	i_cmp(e, e.y, v)
-	return fmt.Sprintf("           cpy #$%.2x", v)
+	return fmt.Sprintf("%.2x        cpy #$%.2x", v, v)
 }
 
 func cpy_abs(e *emu6502) string {

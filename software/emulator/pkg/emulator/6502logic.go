@@ -6,7 +6,7 @@ func and_direct(e *emu6502) string {
 	v := e.getMnemonic()
 	e.a = e.a & v
 	e.setFlags(e.a, nil, nil)
-	return fmt.Sprintf("           and #$%.2x", v)
+	return fmt.Sprintf("%.2x        and #$%.2x", v, v)
 }
 
 func and_abs(e *emu6502) string {
@@ -72,7 +72,7 @@ func ora_direct(e *emu6502) string {
 	v := e.getMnemonic()
 	e.a = e.a | v
 	e.setFlags(e.a, nil, nil)
-	return fmt.Sprintf("           ora #$%.2x", v)
+	return fmt.Sprintf("%.2x        ora #$%.2x", v, v)
 }
 
 func ora_abs(e *emu6502) string {
@@ -138,7 +138,7 @@ func eor_direct(e *emu6502) string {
 	v := e.getMnemonic()
 	e.a = e.a ^ v
 	e.setFlags(e.a, nil, nil)
-	return fmt.Sprintf("           eor #$%.2x", v)
+	return fmt.Sprintf("%.2x        eor #$%.2x", v, v)
 }
 
 func eor_abs(e *emu6502) string {

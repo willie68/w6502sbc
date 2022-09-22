@@ -12,10 +12,12 @@ import (
 )
 
 var binFile string
+var c02 bool
 
 func init() {
 	// variables for parameter override
 	flag.StringVarP(&binFile, "bin", "b", "", "this is the path and filename to the ROM image file")
+	flag.BoolVarP(&c02, "c02", "c", false, "emulate an 65C02")
 }
 
 func main() {
@@ -31,7 +33,11 @@ func main() {
 		log.Logger.Errorf("can't read ROM: %v", err)
 		os.Exit(-1)
 	}
-	w6502sbc := emulator.NewEmu6502().WithROM(0xE000, dat).WithRAM(0x000, 0x7fff).Build()
+	b := emulator.NewEmu6502().WithROM(0xE000, dat).WithRAM(0x000, 0x7fff)
+	if c02 {
+		b.With65C02()
+	}
+	w6502sbc := b.Build()
 	w6502sbc.Start()
 	fmt.Printf("Adr: $%.4X, SP: $%.2X, A: $%.2X, X: $%.2X, Y: $%.2X, S: %08b\r\n", w6502sbc.Adr(), w6502sbc.SP(), w6502sbc.A(), w6502sbc.X(), w6502sbc.Y(), w6502sbc.ST())
 	fmt.Print("x for exit\r\n>")
