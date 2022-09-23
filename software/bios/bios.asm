@@ -86,6 +86,20 @@ main_loop:
 	msg_out(message_ready)
 	jsr lcd_secondrow
 
+@SEROUTL1:
+    lda  ACIA_STATUS    ;Read ACIA status register
+    and  #%00010000     ;Isolate transmit data register status bit
+    beq  @SEROUTL1      ;LOOP back to COUTL IF transmit data register is full
+
+	lda #"A"
+	sta ACIA_TX
+
+	lda ACIA_STATUS
+	jsr do_bhexout
+
+	lda #$00
+	jsr do_delay
+
 	jmp main_loop
 
 do_ioinit: ; initialise the timer for the jiffy clock
@@ -284,7 +298,12 @@ do_irq: ; irq service routine
 	jmp isr_end
 @isr_no_timer1:
 	; here do other isr stuff
+	lda ACIA_STATUS
+	and #$80
+	bne @irql1
+
 	; look if an external irq service routine is set
+@irql1:
 	lda IRQ_SRV
 	cmp #$00
 	beq isr_end

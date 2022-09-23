@@ -5,7 +5,7 @@ do_serinit:
     sta ACIA_STATUS
     lda #%00001011			; no parity, no echo, transmit irq disabled, no receiver irq, DTR High
     sta ACIA_COMMAND
-    lda #%00011111			; 8-bit, 1 Stop bit, Baudrate, 19200 Baud
+    lda #%00011110			; 8-bit, 1 Stop bit, Baudrate, 19200 Baud
     sta ACIA_CONTROL
     pla
     rts
