@@ -78,5 +78,7 @@ func getEmu(data []uint8) *emu6502 {
 	e.ram = ram
 	e.address = 0xe000
 	e.sp = 0xff
+	e.cf = false
+	e.df = false
 	return e
 }

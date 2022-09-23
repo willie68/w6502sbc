@@ -301,7 +301,7 @@ func sbc_zp_ind(e *emu6502) string {
 	adr := e.readVector(zp)
 	v := e.getMemory(adr)
 	sbc(e, v)
-	return str + fmt.Sprintf("        sbc ($%.2x)", adr)
+	return str + fmt.Sprintf("     sbc ($%.2x)", adr)
 }
 
 func jmp_abs_x(e *emu6502) string {

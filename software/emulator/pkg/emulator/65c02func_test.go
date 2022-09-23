@@ -220,6 +220,22 @@ func TestDec(t *testing.T) {
 	testFlags(ast, nil, False, True, e)
 }
 
+func TestSbcZpInd(t *testing.T) {
+	ast := assert.New(t)
+	data := []uint8{
+		0x70, 0x70, 0x20,
+	}
+	e := getEmu(data)
+	e.ram.setMem(uint16(0x0070), uint8(0x02))
+	e.ram.setMem(uint16(0x0071), uint8(0xe0))
+	e.a = 0x70
+	e.cf = true
+	str := sbc_zp_ind(e)
+	fmt.Printf("sbc output: %s\n\r", str)
+
+	ast.Equal(uint8(0x50), e.a)
+}
+
 func TestJmpAbsX(t *testing.T) {
 	ast := assert.New(t)
 	data := []uint8{
