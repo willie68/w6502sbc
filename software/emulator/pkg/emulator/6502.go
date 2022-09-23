@@ -27,6 +27,7 @@ type emu6502 struct {
 	bf      bool // break flag
 	vf      bool // overflow flag
 	nf      bool // negative flag
+	c02     bool // is cmos cpu
 }
 
 type memory struct {
@@ -77,6 +78,7 @@ func (b build6502) Build() emu6502 {
 		f = append(f, cfunc...)
 	}
 	emu := emu6502{
+		c02:       true,
 		functions: f,
 		highrom:   b.highrom,
 		ram:       b.ram,
@@ -93,10 +95,15 @@ func (e *emu6502) init() {
 
 func (e *emu6502) Start() {
 	log.Logger.Info("starting emulation")
+	e.Reset()
 	e.address = e.readVector(uint16(0xFFFC))
 }
 
 func (e *emu6502) Reset() {
+	e.jf = true
+	if e.c02 {
+		e.df = false
+	}
 }
 
 func (e *emu6502) NMI() {

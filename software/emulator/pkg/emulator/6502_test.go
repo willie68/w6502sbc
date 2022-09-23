@@ -72,10 +72,11 @@ func getEmu(data []uint8) *emu6502 {
 	ram := memory{
 		readonly: false,
 		start:    uint16(0),
-		data:     make([]byte, 1024),
-		end:      uint16(1023),
+		data:     make([]byte, 0x8000),
+		end:      uint16(0x7fff),
 	}
 	e.ram = ram
 	e.address = 0xe000
+	e.sp = 0xff
 	return e
 }

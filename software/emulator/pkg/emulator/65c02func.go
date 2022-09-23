@@ -126,14 +126,14 @@ func tsb_abs(e *emu6502) string {
 	adr, str := e.getAddress()
 	v := e.getMemory(adr)
 	e.setMemory(adr, i_tsb(e, v))
-	return str + fmt.Sprintf("   tsb $%.4x", adr)
+	return str + fmt.Sprintf("     tsb $%.4x", adr)
 }
 
 func tsb_zp(e *emu6502) string {
 	adr, str := e.getZPAddress()
 	v := e.getMemory(adr)
 	e.setMemory(adr, i_tsb(e, v))
-	return str + fmt.Sprintf("   tsb $%.2x", adr)
+	return str + fmt.Sprintf("     tsb $%.2x", adr)
 }
 
 func i_trb(e *emu6502, v uint8) uint8 {
@@ -145,14 +145,14 @@ func trb_abs(e *emu6502) string {
 	adr, str := e.getAddress()
 	v := e.getMemory(adr)
 	e.setMemory(adr, i_trb(e, v))
-	return str + fmt.Sprintf("   trb $%.4x", adr)
+	return str + fmt.Sprintf("     trb $%.4x", adr)
 }
 
 func trb_zp(e *emu6502) string {
 	adr, str := e.getZPAddress()
 	v := e.getMemory(adr)
 	e.setMemory(adr, i_trb(e, v))
-	return str + fmt.Sprintf("   trb $%.2x", adr)
+	return str + fmt.Sprintf("     trb $%.2x", adr)
 }
 
 func stz_abs(e *emu6502) string {
@@ -176,45 +176,45 @@ func stz_zp(e *emu6502) string {
 func stz_zp_x(e *emu6502) string {
 	adr, str := e.getZPAddress()
 	e.setMemory(adr+uint16(e.x), 0)
-	return str + fmt.Sprintf("    stz $%.2x,X", adr)
+	return str + fmt.Sprintf("     stz $%.2x,X", adr)
 }
 
 func plx(e *emu6502) string {
-	e.a = e.pop()
-	return "         plx"
+	e.x = e.pop()
+	return "          plx"
 }
 
 func phx(e *emu6502) string {
-	e.push(e.getStatus())
-	return "         phx"
+	e.push(e.x)
+	return "          phx"
 }
 
 func ply(e *emu6502) string {
 	e.a = e.pop()
-	return "         ply"
+	return "          ply"
 }
 
 func phy(e *emu6502) string {
-	e.push(e.getStatus())
-	return "         phy"
+	e.push(e.y)
+	return "          phy"
 }
 
 func bra(e *emu6502) string {
 	v := e.getMnemonic()
 	badr(e, v)
-	return fmt.Sprintf("%.2x   bra $%.4x", v, e.address)
+	return fmt.Sprintf("%.2x        bra $%.4x", v, e.address)
 }
 
 func inc(e *emu6502) string {
 	e.a++
 	e.setFlags(e.a, nil, nil)
-	return "           inc"
+	return "          inc"
 }
 
 func dec(e *emu6502) string {
 	e.a--
 	e.setFlags(e.a, nil, nil)
-	return "           dec"
+	return "          dec"
 }
 
 func bit_direct(e *emu6502) string {
@@ -307,5 +307,5 @@ func sbc_zp_ind(e *emu6502) string {
 func jmp_abs_x(e *emu6502) string {
 	adr, str := e.getAddress()
 	e.address = e.readVector(adr + uint16(e.x))
-	return str + fmt.Sprintf("   jmp ($%.4x,X)", adr)
+	return str + fmt.Sprintf("     jmp ($%.4x,X)", adr)
 }
