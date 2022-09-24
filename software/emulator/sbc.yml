@@ -1,0 +1,15 @@
+ram: 
+  start: 0x000
+  length: 32768
+  type: ram
+rom:
+  start: 0xe000
+  length: 8192
+  file: first_blink.bin
+  type: rom
+pia1:
+  start: 0xb000
+  type: 6522
+acia1:
+  start: 0xb010
+  type: 6551

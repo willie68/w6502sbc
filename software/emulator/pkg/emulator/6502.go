@@ -97,12 +97,12 @@ func (e *emu6502) init() {
 	e.y = 0
 }
 
-func (e *emu6502) Start() {
+func (e *emu6502) Start() string {
 	log.Logger.Info("starting emulation")
-	e.Reset()
+	return e.Reset()
 }
 
-func (e *emu6502) Reset() {
+func (e *emu6502) Reset() string {
 	e.jf = true
 	if e.c02 {
 		e.df = false
@@ -110,6 +110,7 @@ func (e *emu6502) Reset() {
 		e.stop = false
 	}
 	e.address = e.readVector(uint16(0xFFFC))
+	return fmt.Sprintf("read vector $FFFC with value of $%.4x", e.address)
 }
 
 func (e *emu6502) NMI() {

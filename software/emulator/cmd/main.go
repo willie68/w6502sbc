@@ -13,18 +13,23 @@ import (
 
 var binFile string
 var c02 bool
+var cfn string
 
 func init() {
 	// variables for parameter override
 	flag.StringVarP(&binFile, "bin", "b", "", "this is the path and filename to the ROM image file")
-	flag.BoolVarP(&c02, "c02", "c", false, "emulate an 65C02")
+	flag.StringVarP(&cfn, "cfg", "c", "", "this is the path and filename to the ROM image file")
+	flag.BoolVar(&c02, "c02", false, "emulate a 65C02")
 }
 
 func main() {
 	log.Logger.Info("W6502SBC Emulator")
 	flag.Parse()
-	if binFile == "" {
-		log.Logger.Error("no ROM given.")
+	if c02 {
+		log.Logger.Info("using CMOS 6502 Version")
+	}
+	if binFile == "" && cfn == "" {
+		log.Logger.Error("no ROM or config given.")
 		os.Exit(-1)
 	}
 	log.Logger.Info("ROM Image in : " + binFile)
@@ -38,7 +43,8 @@ func main() {
 		b.With65C02()
 	}
 	w6502sbc := b.Build()
-	w6502sbc.Start()
+	str := w6502sbc.Start()
+	fmt.Printf("%s\r\n", str)
 	fmt.Printf("Adr: $%.4X, SP: $%.2X, A: $%.2X, X: $%.2X, Y: $%.2X, S: %08b\r\n", w6502sbc.Adr(), w6502sbc.SP(), w6502sbc.A(), w6502sbc.X(), w6502sbc.Y(), w6502sbc.ST())
 	fmt.Print("x for exit\r\n>")
 	ch := make(chan byte)
