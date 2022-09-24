@@ -21,6 +21,22 @@ var cfunc = []func(*emu6502) string{
 	0xf2: sbc_zp_ind, 0xfa: plx, 0xff: bbs7,
 }
 
+func rmb0(e *emu6502) string {
+	zp, str := e.getZPAddress()
+	v := e.getMemory(zp)
+	v = v & 0xfe
+	e.setMemory(zp, v)
+	return str + fmt.Sprintf("      rmb0 $%.2x", zp)
+}
+
+func smb0(e *emu6502) string {
+	zp, str := e.getZPAddress()
+	v := e.getMemory(zp)
+	v = v | 0x01
+	e.setMemory(zp, v)
+	return str + fmt.Sprintf("      smb0 $%.2x", zp)
+}
+
 func i_bbx(e *emu6502, bit uint8, c bool) (uint16, string) {
 	zp, str := e.getZPAddress()
 	rel := e.getMnemonic()
