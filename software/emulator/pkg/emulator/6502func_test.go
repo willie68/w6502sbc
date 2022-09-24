@@ -74,15 +74,16 @@ func TestNop(t *testing.T) {
 func TestBrk(t *testing.T) {
 	ast := assert.New(t)
 	data := []uint8{
-		0x1ffe: 0x00, 0x1fff: 0xe0,
+		0x1ffe: 0x00, 0x1fff: 0xf0,
 	}
 	e := getEmu(data)
+	e.setStatus(0xdf)
 	str := brk(e)
-	fmt.Printf("php output: %s\n\r", str)
+	fmt.Printf("brk output: %s\n\r", str)
 
-	ast.Equal(uint16(0xe000), e.address)
-	ast.Equal(st, e.getStatus())
-	ast.Equal(uint8(0x67), e.a)
-	ast.Equal(uint8(0x67), e.x)
-	ast.Equal(uint8(0x67), e.y)
+	ast.Equal(uint16(0xf000), e.address)
+	ast.Equal(uint8(0xdf), e.pop())
+
+	adr := uint16(e.pop()) + uint16(e.pop())*256
+	ast.Equal(uint16(0xe001), adr)
 }
