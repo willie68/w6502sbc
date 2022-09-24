@@ -15,10 +15,20 @@ var cfunc = []func(*emu6502) string{
 	0x92: sta_zp_ind, 0x97: smb1, 0x9c: stz_abs, 0x9e: stz_abs_x, 0x9f: bbs1,
 	0xa7: smb2, 0xaf: bbs2,
 	0xb2: lda_zp_ind, 0xb7: smb3, 0xbf: bbs3,
-	0xc7: smb4, 0xcf: bbs4,
-	0xd2: cmp_zp_ind, 0xd7: smb5, 0xda: phx, 0xdf: bbs5,
+	0xc7: smb4, 0xcb: wai, 0xcf: bbs4,
+	0xd2: cmp_zp_ind, 0xd7: smb5, 0xda: phx, 0xdb: stp, 0xdf: bbs5,
 	0xe7: smb6, 0xef: bbs6,
 	0xf2: sbc_zp_ind, 0xf7: smb7, 0xfa: plx, 0xff: bbs7,
+}
+
+func stp(e *emu6502) string {
+	e.stop = true
+	return "        stp"
+}
+
+func wai(e *emu6502) string {
+	e.wait = true
+	return "        wai"
 }
 
 func i_mb_(e *emu6502, bit uint8, c bool) (uint16, string) {

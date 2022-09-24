@@ -28,6 +28,8 @@ type emu6502 struct {
 	vf      bool // overflow flag
 	nf      bool // negative flag
 	c02     bool // is cmos cpu
+	wait    bool // 65C02 wait until iterrupt
+	stop    bool // 65C02 stop until reset
 }
 
 type memory struct {
@@ -82,6 +84,8 @@ func (b build6502) Build() emu6502 {
 		functions: f,
 		highrom:   b.highrom,
 		ram:       b.ram,
+		wait:      false,
+		stop:      false,
 	}
 	emu.init()
 	return emu
@@ -96,28 +100,40 @@ func (e *emu6502) init() {
 func (e *emu6502) Start() {
 	log.Logger.Info("starting emulation")
 	e.Reset()
-	e.address = e.readVector(uint16(0xFFFC))
 }
 
 func (e *emu6502) Reset() {
 	e.jf = true
 	if e.c02 {
 		e.df = false
+		e.wait = false
+		e.stop = false
 	}
+	e.address = e.readVector(uint16(0xFFFC))
 }
 
 func (e *emu6502) NMI() {
+	e.wait = false
 }
 
 func (e *emu6502) IRQ() {
-	adr, _ := e.getAddress()
-	e.push(uint8(adr >> 8))
-	e.push(uint8(adr & 0x00ff))
-	st := e.getStatus()
-	e.push(st)
+	e.wait = false
+	if e.jf {
+		adr, _ := e.getAddress()
+		e.push(uint8(adr >> 8))
+		e.push(uint8(adr & 0x00ff))
+		st := e.getStatus()
+		e.push(st)
+	}
 }
 
 func (e *emu6502) Step() string {
+	if e.wait {
+		return "no step possible, cpu wait, need reset or iterrupt"
+	}
+	if e.stop {
+		return "no step possible, cpu stoped, need reset"
+	}
 	output := ""
 	output = fmt.Sprintf("$%.4x ", e.address)
 	mne := e.getMnemonic()

@@ -7,7 +7,63 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSmb0(t *testing.T) {
+func TestStp(t *testing.T) {
+	ast := assert.New(t)
+	data := []uint8{
+		0xea, 0x02, 0x21, 0x02, 0x00, 0x21,
+		0x1ffa: 0x00, 0x1ffb: 0x00,
+		0x1ffc: 0x00, 0x1ffd: 0xe0,
+		0x1ffe: 0x00, 0x1fff: 0x00,
+	}
+	e := getEmu(data)
+	e.address = 0xe000
+	ast.False(e.stop)
+	stp(e)
+	ast.True(e.stop)
+	adr := e.address
+	e.Step()
+	ast.Equal(adr, e.address)
+	e.IRQ()
+	e.Step()
+	ast.Equal(adr, e.address)
+	e.NMI()
+	e.Step()
+	ast.Equal(adr, e.address)
+
+	e.Reset()
+	ast.Equal(uint16(0xe000), e.address)
+}
+
+func TestWai(t *testing.T) {
+	ast := assert.New(t)
+	data := []uint8{
+		0xea, 0x02, 0x21, 0x02, 0x00, 0x21,
+	}
+	e := getEmu(data)
+	e.address = 0xe000
+	ast.False(e.wait)
+	wai(e)
+	ast.True(e.wait)
+	adr := e.address
+	e.Step()
+	ast.Equal(adr, e.address)
+	e.IRQ()
+	e.Step()
+	ast.Equal(adr+1, e.address)
+
+	e.address = 0xe000
+	ast.False(e.wait)
+	wai(e)
+	ast.True(e.wait)
+	adr = e.address
+	e.Step()
+	ast.Equal(adr, e.address)
+	e.NMI()
+	e.Step()
+	ast.Equal(adr+1, e.address)
+}
+
+func Test_mb_(t *testing.T) {
 	ast := assert.New(t)
 	data := []uint8{
 		0x20, 0x02, 0x21, 0x02, 0x00, 0x21,

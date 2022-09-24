@@ -1,8 +1,6 @@
 package emulator
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,41 +12,6 @@ func init() {
 	True = &b
 	c := false
 	False = &c
-}
-
-func TestTransfer(t *testing.T) {
-	ast := assert.New(t)
-	data := []uint8{
-		0x00,
-	}
-	e := getEmu(data)
-	e.a = 0x73
-	e.x = 0x00
-	tax(e)
-	ast.Equal(uint8(0x73), e.x)
-	testFlags(ast, nil, False, False, e)
-
-	tay(e)
-	ast.Equal(uint8(0x73), e.y)
-	testFlags(ast, nil, False, False, e)
-
-	e.a = 0x00
-	tax(e)
-	ast.Equal(uint8(0x00), e.x)
-	testFlags(ast, nil, True, False, e)
-
-	tay(e)
-	ast.Equal(uint8(0x00), e.y)
-	testFlags(ast, nil, True, False, e)
-
-	e.a = 0x83
-	tax(e)
-	ast.Equal(uint8(0x83), e.x)
-	testFlags(ast, nil, False, True, e)
-
-	tay(e)
-	ast.Equal(uint8(0x83), e.y)
-	testFlags(ast, nil, False, True, e)
 }
 
 func testFlags(ast *assert.Assertions, cf *bool, zf *bool, nf *bool, e *emu6502) {
@@ -68,7 +31,7 @@ func getEmu(data []uint8) *emu6502 {
 	e.init()
 	e.highrom.data = data
 	e.highrom.start = 0xe000
-	e.highrom.end = e.highrom.start + uint16(len(data))
+	e.highrom.end = e.highrom.start + uint16(len(data)-1)
 	ram := memory{
 		readonly: false,
 		start:    uint16(0),

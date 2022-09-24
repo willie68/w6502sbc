@@ -69,5 +69,8 @@ func brk(e *emu6502) string {
 	e.push(e.getStatus())
 	e.jf = true
 	e.address = e.readVector(0xfffe)
+	if e.c02 {
+		e.df = false
+	}
 	return "         brk"
 }
