@@ -1,6 +1,6 @@
 package emulator
 
-var functions = []func(*emu6502) string{
+var functions = []func(*Emu6502) string{
 	0x00: brk, 0x01: ora_ind_x, 0x05: ora_zp, 0x06: asl_zp,
 	0x08: php, 0x09: ora_direct, 0x0a: asl, 0x0d: ora_abs, 0x0e: asl_abs,
 	0x10: bpl, 0x11: ora_ind_y, 0x15: ora_zp_x, 0x16: asl_zp_x,
@@ -35,32 +35,32 @@ var functions = []func(*emu6502) string{
 	0xf8: sed, 0xf9: sbc_abs_y, 0xfd: sbc_abs_x, 0xfe: inc_abs_x, 0xff: nil,
 }
 
-func nop(e *emu6502) string {
-	return "           nop"
+func nop(e *Emu6502) string {
+	return "         nop"
 }
 
-func pha(e *emu6502) string {
+func pha(e *Emu6502) string {
 	e.push(e.a)
 	return "         pha"
 }
 
-func pla(e *emu6502) string {
+func pla(e *Emu6502) string {
 	e.a = e.pop()
 	return "         pla"
 }
 
-func php(e *emu6502) string {
+func php(e *Emu6502) string {
 	e.push(e.getStatus())
 	return "         pha"
 }
 
-func plp(e *emu6502) string {
+func plp(e *Emu6502) string {
 	v := e.pop()
 	e.setStatus(v)
 	return "         plp"
 }
 
-func brk(e *emu6502) string {
+func brk(e *Emu6502) string {
 	e.getMnemonic()
 	adr := e.address
 	e.push(uint8(adr >> 8))

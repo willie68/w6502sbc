@@ -4,14 +4,25 @@
     // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
-            "name": "Run Emulator",
+            "name": "Default Emulator",
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "program": "${cwd}/cmd/main.go",
             "console": "integratedTerminal",
             "args": ["-b", "${cwd}/first_blink.bin", "--c02"]
+        } ,
+        {
+            "name": "SBC Emulator",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${cwd}/cmd/main.go",
+            "console": "integratedTerminal",
+            "args": ["-c", "${cwd}/sbc.yml", "--c02"]
         }
+
     ]
 }

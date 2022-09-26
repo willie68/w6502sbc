@@ -6,16 +6,14 @@ import (
 	log "github.com/willie68/w6502sbc/tree/main/software/emulator/internal/logging"
 )
 
-type build6502 struct {
-	highrom memory
-	ram     memory
-	c02     bool
+type Build6502 struct {
+	memmap []memory
+	c02    bool
 }
 
-type emu6502 struct {
-	functions []func(*emu6502) string
-	highrom   memory
-	ram       memory
+type Emu6502 struct {
+	functions []func(*Emu6502) string
+	memmap    []memory
 
 	a, x, y uint8
 	sp      uint8
@@ -32,58 +30,42 @@ type emu6502 struct {
 	stop    bool // 65C02 stop until reset
 }
 
-type memory struct {
-	readonly bool
-	start    uint16
-	end      uint16
-	data     []byte
-}
-
-func (m *memory) getMem(adr uint16) uint8 {
-	return m.data[adr]
-}
-
-func (m *memory) setMem(adr uint16, dt uint8) {
-	if !m.readonly {
-		m.data[adr] = dt
+func NewEmu6502() *Build6502 {
+	return &Build6502{
+		memmap: make([]memory, 0),
+		c02:    false,
 	}
 }
 
-func NewEmu6502() build6502 {
-	return build6502{
-		c02: false,
-	}
-}
-
-func (b build6502) WithRAM(start, end uint16) build6502 {
+func (b *Build6502) WithRAM(start, end uint16) *Build6502 {
 	ram := make([]byte, end-start)
-	b.ram = memory{readonly: false, start: start, data: ram, end: end}
+	b.memmap = append(b.memmap, memory{readonly: false, start: start, data: ram, end: end})
 	return b
 }
 
-func (b build6502) WithROM(start uint16, data []byte) build6502 {
-	b.highrom = memory{readonly: true, start: start, end: start + uint16(len(data)) - 1, data: data}
+func (b *Build6502) WithROM(start uint16, data []byte) *Build6502 {
+	b.memmap = append(b.memmap, memory{readonly: true, start: start, end: start + uint16(len(data)) - 1, data: data})
 	return b
 }
 
-func (b build6502) With6522(adr uint16) build6502 {
+func (b *Build6502) With6522(adr uint16) *Build6502 {
 	return b
 }
 
-func (b *build6502) With65C02() {
+func (b *Build6502) With65C02() *Build6502 {
 	b.c02 = true
+	return b
 }
 
-func (b build6502) Build() emu6502 {
+func (b *Build6502) Build() Emu6502 {
 	f := functions
 	if b.c02 {
 		f = append(f, cfunc...)
 	}
-	emu := emu6502{
+	emu := Emu6502{
 		c02:       true,
 		functions: f,
-		highrom:   b.highrom,
-		ram:       b.ram,
+		memmap:    b.memmap,
 		wait:      false,
 		stop:      false,
 	}
@@ -91,18 +73,18 @@ func (b build6502) Build() emu6502 {
 	return emu
 }
 
-func (e *emu6502) init() {
+func (e *Emu6502) init() {
 	e.a = 0
 	e.x = 0
 	e.y = 0
 }
 
-func (e *emu6502) Start() string {
+func (e *Emu6502) Start() string {
 	log.Logger.Info("starting emulation")
 	return e.Reset()
 }
 
-func (e *emu6502) Reset() string {
+func (e *Emu6502) Reset() string {
 	e.jf = true
 	if e.c02 {
 		e.df = false
@@ -113,11 +95,11 @@ func (e *emu6502) Reset() string {
 	return fmt.Sprintf("read vector $FFFC with value of $%.4x", e.address)
 }
 
-func (e *emu6502) NMI() {
+func (e *Emu6502) NMI() {
 	e.wait = false
 }
 
-func (e *emu6502) IRQ() {
+func (e *Emu6502) IRQ() {
 	e.wait = false
 	if e.jf {
 		adr, _ := e.getAddress()
@@ -128,7 +110,7 @@ func (e *emu6502) IRQ() {
 	}
 }
 
-func (e *emu6502) Step() string {
+func (e *Emu6502) Step() string {
 	if e.wait {
 		return "no step possible, cpu wait, need reset or iterrupt"
 	}
@@ -153,62 +135,60 @@ func (e *emu6502) Step() string {
 	return output
 }
 
-func (e *emu6502) Adr() uint16 {
+func (e *Emu6502) Adr() uint16 {
 	return e.address
 }
 
-func (e *emu6502) SP() uint8 {
+func (e *Emu6502) SP() uint8 {
 	return e.sp
 }
 
-func (e *emu6502) A() uint8 {
+func (e *Emu6502) A() uint8 {
 	return e.a
 }
 
-func (e *emu6502) X() uint8 {
+func (e *Emu6502) X() uint8 {
 	return e.x
 }
 
-func (e *emu6502) Y() uint8 {
+func (e *Emu6502) Y() uint8 {
 	return e.y
 }
 
-func (e *emu6502) ST() uint8 {
+func (e *Emu6502) ST() uint8 {
 	return e.getStatus()
 }
 
-func (e *emu6502) readVector(adr uint16) uint16 {
+func (e *Emu6502) readVector(adr uint16) uint16 {
 	lo := uint16(e.getMemory(adr))
 	hi := uint16(e.getMemory(adr + 1))
 	return hi*256 + lo
 }
 
-func (e *emu6502) getMemory(adr uint16) uint8 {
-	if adr >= e.ram.start && adr <= e.ram.end {
-		ramadr := adr - e.ram.start
-		return e.ram.getMem(ramadr)
-	}
-	if adr >= e.highrom.start && adr <= e.highrom.end {
-		romadr := adr - e.highrom.start
-		return e.highrom.getMem(romadr)
+func (e *Emu6502) getMemory(adr uint16) uint8 {
+	for _, m := range e.memmap {
+		if m.IsMapped(adr) {
+			return m.GetMem(adr)
+		}
 	}
 	return 0
 }
 
-func (e *emu6502) getMnemonic() uint8 {
+func (e *Emu6502) setMemory(adr uint16, dt uint8) {
+	for _, m := range e.memmap {
+		if m.IsMapped(adr) {
+			m.SetMem(adr, dt)
+		}
+	}
+}
+
+func (e *Emu6502) getMnemonic() uint8 {
 	b := e.getMemory(e.address)
 	e.address++
 	return b
 }
 
-func (e *emu6502) setMemory(adr uint16, dt uint8) {
-	if adr >= e.ram.start && adr <= e.ram.end {
-		ramadr := adr - e.ram.start
-		e.ram.setMem(ramadr, dt)
-	}
-}
-
-func (e *emu6502) setFlags(v uint8, cf *bool, vf *bool) {
+func (e *Emu6502) setFlags(v uint8, cf *bool, vf *bool) {
 	e.zf = v == 0
 	e.nf = (v & 0x80) > 0
 	if cf != nil {
@@ -219,30 +199,30 @@ func (e *emu6502) setFlags(v uint8, cf *bool, vf *bool) {
 	}
 }
 
-func (e *emu6502) getAddress() (uint16, string) {
+func (e *Emu6502) getAddress() (uint16, string) {
 	lo := e.getMnemonic()
 	hi := e.getMnemonic()
 	return uint16(hi)*256 + uint16(lo), fmt.Sprintf("%.2x %.2x", lo, hi)
 }
 
-func (e *emu6502) getZPAddress() (uint16, string) {
+func (e *Emu6502) getZPAddress() (uint16, string) {
 	lo := e.getMnemonic()
 	return uint16(lo), fmt.Sprintf("%.2x   ", lo)
 }
 
-func (e *emu6502) push(v uint8) {
+func (e *Emu6502) push(v uint8) {
 	adr := uint16(0x0100) + uint16(e.sp)
 	e.setMemory(adr, v)
 	e.sp--
 }
 
-func (e *emu6502) pop() uint8 {
+func (e *Emu6502) pop() uint8 {
 	e.sp++
 	adr := uint16(0x0100) + uint16(e.sp)
 	return e.getMemory(adr)
 }
 
-func (e *emu6502) setStatus(st uint8) {
+func (e *Emu6502) setStatus(st uint8) {
 	e.nf = (st & 0x80) > 0
 	e.vf = (st & 0x40) > 0
 	e.nf = true
@@ -253,7 +233,7 @@ func (e *emu6502) setStatus(st uint8) {
 	e.cf = (st & 0x01) > 0
 }
 
-func (e *emu6502) getStatus() uint8 {
+func (e *Emu6502) getStatus() uint8 {
 	st := uint8(0)
 	if e.nf {
 		st = st + 0x80

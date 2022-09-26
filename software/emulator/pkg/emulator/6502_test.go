@@ -14,7 +14,7 @@ func init() {
 	False = &c
 }
 
-func testFlags(ast *assert.Assertions, cf *bool, zf *bool, nf *bool, e *emu6502) {
+func testFlags(ast *assert.Assertions, cf *bool, zf *bool, nf *bool, e *Emu6502) {
 	if cf != nil {
 		ast.Equal(*cf, e.cf, "carry flag")
 	}
@@ -26,8 +26,8 @@ func testFlags(ast *assert.Assertions, cf *bool, zf *bool, nf *bool, e *emu6502)
 	}
 }
 
-func getEmu(data []uint8) *emu6502 {
-	e := &emu6502{}
+func getEmu(data []uint8) *Emu6502 {
+	e := &Emu6502{}
 	e.init()
 	e.highrom.data = data
 	e.highrom.start = 0xe000

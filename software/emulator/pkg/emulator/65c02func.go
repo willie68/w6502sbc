@@ -2,7 +2,7 @@ package emulator
 
 import "fmt"
 
-var cfunc = []func(*emu6502) string{
+var cfunc = []func(*Emu6502) string{
 	0x04: tsb_zp, 0x07: rmb0, 0x0c: tsb_abs, 0x0f: bbr0,
 	0x12: ora_zp_ind, 0x14: trb_zp, 0x17: rmb1, 0x1a: inc, 0x1c: trb_abs, 0x1f: bbr1,
 	0x27: rmb2, 0x2f: bbr2,
@@ -21,17 +21,17 @@ var cfunc = []func(*emu6502) string{
 	0xf2: sbc_zp_ind, 0xf7: smb7, 0xfa: plx, 0xff: bbs7,
 }
 
-func stp(e *emu6502) string {
+func stp(e *Emu6502) string {
 	e.stop = true
 	return "        stp"
 }
 
-func wai(e *emu6502) string {
+func wai(e *Emu6502) string {
 	e.wait = true
 	return "        wai"
 }
 
-func i_mb_(e *emu6502, bit uint8, c bool) (uint16, string) {
+func i_mb_(e *Emu6502, bit uint8, c bool) (uint16, string) {
 	zp, str := e.getZPAddress()
 	v := e.getMemory(zp)
 	if c {
@@ -43,87 +43,87 @@ func i_mb_(e *emu6502, bit uint8, c bool) (uint16, string) {
 	return zp, str
 }
 
-func rmb0(e *emu6502) string {
+func rmb0(e *Emu6502) string {
 	zp, str := i_mb_(e, 0, true)
 	return str + fmt.Sprintf("      rmb0 $%.2x", zp)
 }
 
-func smb0(e *emu6502) string {
+func smb0(e *Emu6502) string {
 	zp, str := i_mb_(e, 0, false)
 	return str + fmt.Sprintf("      smb0 $%.2x", zp)
 }
 
-func rmb1(e *emu6502) string {
+func rmb1(e *Emu6502) string {
 	zp, str := i_mb_(e, 1, true)
 	return str + fmt.Sprintf("      rmb1 $%.2x", zp)
 }
 
-func smb1(e *emu6502) string {
+func smb1(e *Emu6502) string {
 	zp, str := i_mb_(e, 1, false)
 	return str + fmt.Sprintf("      smb1 $%.2x", zp)
 }
 
-func rmb2(e *emu6502) string {
+func rmb2(e *Emu6502) string {
 	zp, str := i_mb_(e, 2, true)
 	return str + fmt.Sprintf("      rmb2 $%.2x", zp)
 }
 
-func smb2(e *emu6502) string {
+func smb2(e *Emu6502) string {
 	zp, str := i_mb_(e, 2, false)
 	return str + fmt.Sprintf("      smb2 $%.2x", zp)
 }
 
-func rmb3(e *emu6502) string {
+func rmb3(e *Emu6502) string {
 	zp, str := i_mb_(e, 3, true)
 	return str + fmt.Sprintf("      rmb3 $%.2x", zp)
 }
 
-func smb3(e *emu6502) string {
+func smb3(e *Emu6502) string {
 	zp, str := i_mb_(e, 3, false)
 	return str + fmt.Sprintf("      smb3 $%.2x", zp)
 }
 
-func rmb4(e *emu6502) string {
+func rmb4(e *Emu6502) string {
 	zp, str := i_mb_(e, 4, true)
 	return str + fmt.Sprintf("      rmb4 $%.2x", zp)
 }
 
-func smb4(e *emu6502) string {
+func smb4(e *Emu6502) string {
 	zp, str := i_mb_(e, 4, false)
 	return str + fmt.Sprintf("      smb4 $%.2x", zp)
 }
 
-func rmb5(e *emu6502) string {
+func rmb5(e *Emu6502) string {
 	zp, str := i_mb_(e, 5, true)
 	return str + fmt.Sprintf("      rmb5 $%.2x", zp)
 }
 
-func smb5(e *emu6502) string {
+func smb5(e *Emu6502) string {
 	zp, str := i_mb_(e, 5, false)
 	return str + fmt.Sprintf("      smb5 $%.2x", zp)
 }
 
-func rmb6(e *emu6502) string {
+func rmb6(e *Emu6502) string {
 	zp, str := i_mb_(e, 6, true)
 	return str + fmt.Sprintf("      rmb6 $%.2x", zp)
 }
 
-func smb6(e *emu6502) string {
+func smb6(e *Emu6502) string {
 	zp, str := i_mb_(e, 6, false)
 	return str + fmt.Sprintf("      smb6 $%.2x", zp)
 }
 
-func rmb7(e *emu6502) string {
+func rmb7(e *Emu6502) string {
 	zp, str := i_mb_(e, 7, true)
 	return str + fmt.Sprintf("      rmb7 $%.2x", zp)
 }
 
-func smb7(e *emu6502) string {
+func smb7(e *Emu6502) string {
 	zp, str := i_mb_(e, 7, false)
 	return str + fmt.Sprintf("      smb7 $%.2x", zp)
 }
 
-func i_bbx(e *emu6502, bit uint8, c bool) (uint16, string) {
+func i_bbx(e *Emu6502, bit uint8, c bool) (uint16, string) {
 	zp, str := e.getZPAddress()
 	rel := e.getMnemonic()
 	v := e.getMemory(zp)
@@ -139,207 +139,207 @@ func i_bbx(e *emu6502, bit uint8, c bool) (uint16, string) {
 	return zp, str
 }
 
-func bbr0(e *emu6502) string {
+func bbr0(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x01, true)
 	return str + fmt.Sprintf("   bbr0 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbs0(e *emu6502) string {
+func bbs0(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x01, false)
 	return str + fmt.Sprintf("   bbs0 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbr1(e *emu6502) string {
+func bbr1(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x02, true)
 	return str + fmt.Sprintf("   bbr1 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbs1(e *emu6502) string {
+func bbs1(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x02, false)
 	return str + fmt.Sprintf("   bbs1 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbr2(e *emu6502) string {
+func bbr2(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x04, true)
 	return str + fmt.Sprintf("   bbr2 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbs2(e *emu6502) string {
+func bbs2(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x04, false)
 	return str + fmt.Sprintf("   bbs2 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbr3(e *emu6502) string {
+func bbr3(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x08, true)
 	return str + fmt.Sprintf("   bbr3 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbs3(e *emu6502) string {
+func bbs3(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x08, false)
 	return str + fmt.Sprintf("   bbs3 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbr4(e *emu6502) string {
+func bbr4(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x10, true)
 	return str + fmt.Sprintf("   bbr4 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbs4(e *emu6502) string {
+func bbs4(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x10, false)
 	return str + fmt.Sprintf("   bbs4 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbr5(e *emu6502) string {
+func bbr5(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x20, true)
 	return str + fmt.Sprintf("   bbr5 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbs5(e *emu6502) string {
+func bbs5(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x20, false)
 	return str + fmt.Sprintf("   bbs5 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbr6(e *emu6502) string {
+func bbr6(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x40, true)
 	return str + fmt.Sprintf("   bbr6 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbs6(e *emu6502) string {
+func bbs6(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x40, false)
 	return str + fmt.Sprintf("   bbs6 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbr7(e *emu6502) string {
+func bbr7(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x80, true)
 	return str + fmt.Sprintf("   bbr7 $%.2x, $%.4x", zp, e.address)
 }
 
-func bbs7(e *emu6502) string {
+func bbs7(e *Emu6502) string {
 	zp, str := i_bbx(e, 0x80, false)
 	return str + fmt.Sprintf("   bbs7 $%.2x, $%.4x", zp, e.address)
 }
 
-func i_tsb(e *emu6502, v uint8) uint8 {
+func i_tsb(e *Emu6502, v uint8) uint8 {
 	i_bit(e, v)
 	return (e.a | v)
 }
 
-func tsb_abs(e *emu6502) string {
+func tsb_abs(e *Emu6502) string {
 	adr, str := e.getAddress()
 	v := e.getMemory(adr)
 	e.setMemory(adr, i_tsb(e, v))
 	return str + fmt.Sprintf("     tsb $%.4x", adr)
 }
 
-func tsb_zp(e *emu6502) string {
+func tsb_zp(e *Emu6502) string {
 	adr, str := e.getZPAddress()
 	v := e.getMemory(adr)
 	e.setMemory(adr, i_tsb(e, v))
 	return str + fmt.Sprintf("     tsb $%.2x", adr)
 }
 
-func i_trb(e *emu6502, v uint8) uint8 {
+func i_trb(e *Emu6502, v uint8) uint8 {
 	i_bit(e, v)
 	return (e.a ^ 0xff) & v
 }
 
-func trb_abs(e *emu6502) string {
+func trb_abs(e *Emu6502) string {
 	adr, str := e.getAddress()
 	v := e.getMemory(adr)
 	e.setMemory(adr, i_trb(e, v))
 	return str + fmt.Sprintf("     trb $%.4x", adr)
 }
 
-func trb_zp(e *emu6502) string {
+func trb_zp(e *Emu6502) string {
 	adr, str := e.getZPAddress()
 	v := e.getMemory(adr)
 	e.setMemory(adr, i_trb(e, v))
 	return str + fmt.Sprintf("     trb $%.2x", adr)
 }
 
-func stz_abs(e *emu6502) string {
+func stz_abs(e *Emu6502) string {
 	adr, str := e.getAddress()
 	e.setMemory(adr, 0)
 	return str + fmt.Sprintf("     stz $%.4x", adr)
 }
 
-func stz_abs_x(e *emu6502) string {
+func stz_abs_x(e *Emu6502) string {
 	adr, str := e.getAddress()
 	e.setMemory(adr+uint16(e.x), 0)
 	return str + fmt.Sprintf("     stz $%.4x,X", adr)
 }
 
-func stz_zp(e *emu6502) string {
+func stz_zp(e *Emu6502) string {
 	adr, str := e.getZPAddress()
 	e.setMemory(adr, 0)
 	return str + fmt.Sprintf("     stz $%.2x", adr)
 }
 
-func stz_zp_x(e *emu6502) string {
+func stz_zp_x(e *Emu6502) string {
 	adr, str := e.getZPAddress()
 	e.setMemory(adr+uint16(e.x), 0)
 	return str + fmt.Sprintf("     stz $%.2x,X", adr)
 }
 
-func plx(e *emu6502) string {
+func plx(e *Emu6502) string {
 	e.x = e.pop()
 	return "          plx"
 }
 
-func phx(e *emu6502) string {
+func phx(e *Emu6502) string {
 	e.push(e.x)
 	return "          phx"
 }
 
-func ply(e *emu6502) string {
+func ply(e *Emu6502) string {
 	e.a = e.pop()
 	return "          ply"
 }
 
-func phy(e *emu6502) string {
+func phy(e *Emu6502) string {
 	e.push(e.y)
 	return "          phy"
 }
 
-func bra(e *emu6502) string {
+func bra(e *Emu6502) string {
 	v := e.getMnemonic()
 	badr(e, v)
 	return fmt.Sprintf("%.2x        bra $%.4x", v, e.address)
 }
 
-func inc(e *emu6502) string {
+func inc(e *Emu6502) string {
 	e.a++
 	e.setFlags(e.a, nil, nil)
 	return "          inc"
 }
 
-func dec(e *emu6502) string {
+func dec(e *Emu6502) string {
 	e.a--
 	e.setFlags(e.a, nil, nil)
 	return "          dec"
 }
 
-func bit_direct(e *emu6502) string {
+func bit_direct(e *Emu6502) string {
 	v := e.getMnemonic()
 	e.zf = (v & e.a) == 0
 	return fmt.Sprintf("%.2x        bit #$%.2x", v, v)
 }
 
-func bit_zp_x(e *emu6502) string {
+func bit_zp_x(e *Emu6502) string {
 	adr, str := e.getZPAddress()
 	v := e.getMemory(adr + uint16(e.x))
 	i_bit(e, v)
 	return str + fmt.Sprintf("   bit $%.2x,X", adr)
 }
 
-func bit_abs_x(e *emu6502) string {
+func bit_abs_x(e *Emu6502) string {
 	adr, str := e.getAddress()
 	v := e.getMemory(adr + uint16(e.x))
 	i_bit(e, v)
 	return str + fmt.Sprintf("   bit $%.4x,X", adr)
 }
 
-func ora_zp_ind(e *emu6502) string {
+func ora_zp_ind(e *Emu6502) string {
 	zp, str := e.getZPAddress()
 	adr := e.readVector(zp)
 	v := e.getMemory(adr)
@@ -348,7 +348,7 @@ func ora_zp_ind(e *emu6502) string {
 	return str + fmt.Sprintf("        ora ($%.2x)", adr)
 }
 
-func and_zp_ind(e *emu6502) string {
+func and_zp_ind(e *Emu6502) string {
 	zp, str := e.getZPAddress()
 	adr := e.readVector(zp)
 	v := e.getMemory(adr)
@@ -357,7 +357,7 @@ func and_zp_ind(e *emu6502) string {
 	return str + fmt.Sprintf("        and ($%.2x)", adr)
 }
 
-func eor_zp_ind(e *emu6502) string {
+func eor_zp_ind(e *Emu6502) string {
 	zp, str := e.getZPAddress()
 	adr := e.readVector(zp)
 	v := e.getMemory(adr)
@@ -366,7 +366,7 @@ func eor_zp_ind(e *emu6502) string {
 	return str + fmt.Sprintf("        eor ($%.2x)", adr)
 }
 
-func adc_zp_ind(e *emu6502) string {
+func adc_zp_ind(e *Emu6502) string {
 	zp, str := e.getZPAddress()
 	adr := e.readVector(zp)
 	v := e.getMemory(adr)
@@ -374,14 +374,14 @@ func adc_zp_ind(e *emu6502) string {
 	return str + fmt.Sprintf("        adc ($%.2x)", adr)
 }
 
-func sta_zp_ind(e *emu6502) string {
+func sta_zp_ind(e *Emu6502) string {
 	zp, str := e.getZPAddress()
 	adr := e.readVector(zp)
 	e.setMemory(adr, e.a)
 	return str + fmt.Sprintf("     sta ($%.2x)", adr)
 }
 
-func lda_zp_ind(e *emu6502) string {
+func lda_zp_ind(e *Emu6502) string {
 	zp, str := e.getZPAddress()
 	adr := e.readVector(zp)
 	v := e.getMemory(adr)
@@ -390,7 +390,7 @@ func lda_zp_ind(e *emu6502) string {
 	return str + fmt.Sprintf("        lda ($%.2x)", adr)
 }
 
-func cmp_zp_ind(e *emu6502) string {
+func cmp_zp_ind(e *Emu6502) string {
 	zp, str := e.getZPAddress()
 	adr := e.readVector(zp)
 	v := e.getMemory(adr)
@@ -398,7 +398,7 @@ func cmp_zp_ind(e *emu6502) string {
 	return str + fmt.Sprintf("        cmp ($%.2x)", adr)
 }
 
-func sbc_zp_ind(e *emu6502) string {
+func sbc_zp_ind(e *Emu6502) string {
 	zp, str := e.getZPAddress()
 	adr := e.readVector(zp)
 	v := e.getMemory(adr)
@@ -406,7 +406,7 @@ func sbc_zp_ind(e *emu6502) string {
 	return str + fmt.Sprintf("        sbc ($%.2x)", adr)
 }
 
-func jmp_abs_x(e *emu6502) string {
+func jmp_abs_x(e *Emu6502) string {
 	adr, str := e.getAddress()
 	e.address = e.readVector(adr + uint16(e.x))
 	return str + fmt.Sprintf("        jmp ($%.4x,X)", adr)

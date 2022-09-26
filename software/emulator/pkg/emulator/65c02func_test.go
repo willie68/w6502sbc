@@ -71,7 +71,7 @@ func Test_mb_(t *testing.T) {
 	e := getEmu(data)
 	e.ram.setMem(uint16(0x20), 0x00)
 	e.ram.setMem(uint16(0x21), 0xff)
-	smbs := []func(*emu6502) string{
+	smbs := []func(*Emu6502) string{
 		smb0, smb1, smb2, smb3, smb4, smb5, smb6, smb7,
 	}
 	v := uint8(0x00)
@@ -86,7 +86,7 @@ func Test_mb_(t *testing.T) {
 		ast.Equal(v, e.ram.getMem(uint16(0x0020)))
 	}
 
-	rmbs := []func(*emu6502) string{
+	rmbs := []func(*Emu6502) string{
 		rmb0, rmb1, rmb2, rmb3, rmb4, rmb5, rmb6, rmb7,
 	}
 	v = uint8(0xff)
@@ -109,7 +109,7 @@ func TestBb_(t *testing.T) {
 	e := getEmu(data)
 	e.ram.setMem(uint16(0x20), 0xff)
 	e.ram.setMem(uint16(0x21), 0x00)
-	bbrs := []func(*emu6502) string{
+	bbrs := []func(*Emu6502) string{
 		bbr0, bbr1, bbr2, bbr3, bbr4, bbr5, bbr6, bbr7,
 	}
 	for i, f := range bbrs {
@@ -127,7 +127,7 @@ func TestBb_(t *testing.T) {
 		ast.Equal(uint16(0xe006), e.address)
 	}
 
-	bbss := []func(*emu6502) string{
+	bbss := []func(*Emu6502) string{
 		bbs0, bbs1, bbs2, bbs3, bbs4, bbs5, bbs6, bbs7,
 	}
 	for i, f := range bbss {

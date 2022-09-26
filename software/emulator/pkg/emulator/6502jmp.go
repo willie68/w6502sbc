@@ -2,20 +2,20 @@ package emulator
 
 import "fmt"
 
-func jmp_abs(e *emu6502) string {
+func jmp_abs(e *Emu6502) string {
 	adr, str := e.getAddress()
 	e.address = adr
 	return str + fmt.Sprintf("   jmp $%.4x", adr)
 }
 
-func jmp_ind(e *emu6502) string {
+func jmp_ind(e *Emu6502) string {
 	vec, str := e.getAddress()
 	adr := e.readVector(vec)
 	e.address = adr
 	return str + fmt.Sprintf("   jmp ($%.4x)", adr)
 }
 
-func jsr_abs(e *emu6502) string {
+func jsr_abs(e *Emu6502) string {
 	adr, str := e.getAddress()
 	adr--
 	e.push(uint8(adr >> 8))
@@ -24,7 +24,7 @@ func jsr_abs(e *emu6502) string {
 	return str + fmt.Sprintf("   jmp $%.4x", adr)
 }
 
-func rts(e *emu6502) string {
+func rts(e *Emu6502) string {
 	lo := e.pop()
 	hi := e.pop()
 	e.address = uint16(lo) + uint16(hi)*265
@@ -32,7 +32,7 @@ func rts(e *emu6502) string {
 	return "         rts"
 }
 
-func rti(e *emu6502) string {
+func rti(e *Emu6502) string {
 	st := e.pop()
 	e.setStatus(st)
 	lo := e.pop()
@@ -42,7 +42,7 @@ func rti(e *emu6502) string {
 }
 
 // badr set the new calculated address
-func badr(e *emu6502, v uint8) {
+func badr(e *Emu6502, v uint8) {
 	v1 := uint16(v)
 	if v > 0x80 {
 		v1 = uint16(0xff00) + uint16(v)
@@ -50,7 +50,7 @@ func badr(e *emu6502, v uint8) {
 	e.address = uint16(e.address + v1)
 }
 
-func bcc(e *emu6502) string {
+func bcc(e *Emu6502) string {
 	v := e.getMnemonic()
 	if !e.cf {
 		badr(e, v)
@@ -58,7 +58,7 @@ func bcc(e *emu6502) string {
 	return fmt.Sprintf("%.2x   bcc $%.4x", v, e.address)
 }
 
-func bcs(e *emu6502) string {
+func bcs(e *Emu6502) string {
 	v := e.getMnemonic()
 	if e.cf {
 		badr(e, v)
@@ -66,7 +66,7 @@ func bcs(e *emu6502) string {
 	return fmt.Sprintf("%.2x   bcs $%.4x", v, e.address)
 }
 
-func beq(e *emu6502) string {
+func beq(e *Emu6502) string {
 	v := e.getMnemonic()
 	if e.zf {
 		badr(e, v)
@@ -74,7 +74,7 @@ func beq(e *emu6502) string {
 	return fmt.Sprintf("%.2x   beq $%.4x", v, e.address)
 }
 
-func bne(e *emu6502) string {
+func bne(e *Emu6502) string {
 	v := e.getMnemonic()
 	if !e.zf {
 		badr(e, v)
@@ -82,7 +82,7 @@ func bne(e *emu6502) string {
 	return fmt.Sprintf("%.2x   bne $%.4x", v, e.address)
 }
 
-func bpl(e *emu6502) string {
+func bpl(e *Emu6502) string {
 	v := e.getMnemonic()
 	if !e.nf {
 		badr(e, v)
@@ -90,7 +90,7 @@ func bpl(e *emu6502) string {
 	return fmt.Sprintf("%.2x   bpl $%.4x", v, e.address)
 }
 
-func bmi(e *emu6502) string {
+func bmi(e *Emu6502) string {
 	v := e.getMnemonic()
 	if e.nf {
 		badr(e, v)
@@ -98,7 +98,7 @@ func bmi(e *emu6502) string {
 	return fmt.Sprintf("%.2x   bmi $%.4x", v, e.address)
 }
 
-func bvc(e *emu6502) string {
+func bvc(e *Emu6502) string {
 	v := e.getMnemonic()
 	if !e.vf {
 		badr(e, v)
@@ -106,7 +106,7 @@ func bvc(e *emu6502) string {
 	return fmt.Sprintf("%.2x   bvc $%.4x", v, e.address)
 }
 
-func bvs(e *emu6502) string {
+func bvs(e *Emu6502) string {
 	v := e.getMnemonic()
 	if e.vf {
 		badr(e, v)
@@ -114,37 +114,37 @@ func bvs(e *emu6502) string {
 	return fmt.Sprintf("%.2x   bvs $%.4x", v, e.address)
 }
 
-func sec(e *emu6502) string {
+func sec(e *Emu6502) string {
 	e.cf = true
 	return "         sec"
 }
 
-func clc(e *emu6502) string {
+func clc(e *Emu6502) string {
 	e.cf = false
 	return "         clc"
 }
 
-func sei(e *emu6502) string {
+func sei(e *Emu6502) string {
 	e.jf = true
 	return "         sei"
 }
 
-func cli(e *emu6502) string {
+func cli(e *Emu6502) string {
 	e.jf = false
 	return "         cli"
 }
 
-func clv(e *emu6502) string {
+func clv(e *Emu6502) string {
 	e.vf = false
 	return "         clv"
 }
 
-func sed(e *emu6502) string {
+func sed(e *Emu6502) string {
 	e.df = true
 	return "         sed"
 }
 
-func cld(e *emu6502) string {
+func cld(e *Emu6502) string {
 	e.df = false
 	return "         cld"
 }

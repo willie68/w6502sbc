@@ -1,15 +1,17 @@
+cpu:
+  type: "65C02"
 ram: 
   start: 0x000
   length: 32768
-  type: ram
+  type: "ram"
 rom:
   start: 0xe000
   length: 8192
-  file: first_blink.bin
-  type: rom
+  file: H:\privat\git-sourcen\w6502sbc\software\emulator\first_blink.bin
+  type: "rom"
 pia1:
   start: 0xb000
-  type: 6522
+  type: "6522"
 acia1:
   start: 0xb010
-  type: 6551
+  type: "6551"
