@@ -991,6 +991,20 @@ do_delay:
 
 
 
+# WDC65C51 PLCC28
+
+Ich habe mit einigen verschiedenen R65C51 Varianten aus China experimentiert. Alle 5 Chips unterscheiden sich etwas in ihrem Aussehen. 3 PlasticDip einmal Keramik, 3 mit Rockwell-Logo einmal ohne… Und in meiner Platine verhält sich jeder Chip anders. Der Keramikchip startet den Oszillator nicht, einer gibt immer einen Interrupt (Bit 7) auch wenn kein anderes Bit gesetzt ist. Einer will immer 5 Bit seriell verwenden, egal was ich in das Steuerregister eintrage, einer gibt immer %00000000 aus und der letzte hat eine andere Baudrate. Ich gebe auf, den R6551 für meinen SBC verwenden zu wollen und habe ein Paar max3100 bestellt… Diese werden allerdings mit SPI angesprochen. In der Zwischenzeit konnte ich auch einen WDC W65C51 ergattern, allerdings nur in PLCC28. Und dafür einen vollständigen Adapter zu besorgen ist auch nicht einfach. Also habe ich mir einen selber designed und gebaut.
+
+![pcb_v1](./images/plcc28_dil28_adapter.jpg)
+
+<img src="./images/plcc28_dil28_adapter_side.jpg" alt="pcb_v1" style="zoom:50%;" />
+
+MEin SBC sieht also jetzt so aus
+
+![pcb_v1](./images/wdc65C51_plcc28.jpg)
+
+
+
 # Terminal
 
 Da mein SBC ja weder über Tastatur noch Monitor verfügt muss eine andere Lösung her. Dazu verwende ich eine serielle Schnittstelle. Als Baustein verwende ich einen R65C51. Der entsprechende W65C51 ist leider derzeit nicht zu bekommen. Weiterhin hört man von größeren Problemen mit dem Chip. Um damit ein Terminal auf dem PC anzusprechen muss zusätzlich auch noch ein Seriell/USB Adapter her. Die gibt es zum Glück mannigfach. 
