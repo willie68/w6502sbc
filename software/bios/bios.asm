@@ -81,26 +81,47 @@ do_reset: ; bios reset routine
 	ldx #$0
 	jsr do_numout 
 
+	lda #>message_w6502sbc
+	ldx #<message_w6502sbc
+	jsr do_serstrout2
+
 main_loop:
 	jsr lcd_clear
 	msg_out(message_ready)
 	jsr lcd_secondrow
-
-@SEROUTL1:
-    lda  ACIA_STATUS    ;Read ACIA status register
-    and  #%00010000     ;Isolate transmit data register status bit
-    beq  @SEROUTL1      ;LOOP back to COUTL IF transmit data register is full
-
-	lda #"A"
-	sta ACIA_TX
-
 	lda ACIA_STATUS
 	jsr do_bhexout
 
+;@SEROUTL1:
+;    lda  ACIA_STATUS    ;Read ACIA status register
+;    and  #%00010000     ;Isolate transmit data register status bit
+;    beq  @SEROUTL1      ;LOOP back to COUTL IF transmit data register is full
+
+	lda #"A"
+	jsr do_serout
+
+;	lda #$FF
+;	jsr do_delay
+
+	jmp main_loop
+
+do_serstrout2: ; output string, address of text hi: A, lo: X
+	phy
+    stx TEMP_VEC
+	sta TEMP_VEC+1
+  	ldy #0
+@serprint:
+  	lda (TEMP_VEC),y
+  	beq @serreturn
+	sta ACIA_TX
 	lda #$00
 	jsr do_delay
 
-	jmp main_loop
+  	iny
+  	jmp @serprint
+@serreturn:
+	ply
+	rts
 
 do_ioinit: ; initialise the timer for the jiffy clock
 	lda #%01111111
@@ -240,7 +261,7 @@ jtest:
 jiend:
 	rts
 
-.include "serspi.asm"
+.include "seriell.asm"
 .include "lcd.asm"
 
 ;------------------------------------------------------------------------------
@@ -328,14 +349,7 @@ do_setnmisrv: ; setting an external irq routine for checking, A hi, X lo
 	rts
 
 ;----- Messages of the bios -----
-	message_w6502sbc: .asciiz "W6502SBC"
-	message_welcome: .asciiz "Welcome"
-	message_ramtas: .asciiz "RAMTAS"
-	message_srvinit: .asciiz "SRV INIT"
-	message_ready: .asciiz "ready"
-	message_showdec: .asciiz "show dec"
-	message_britta: .asciiz "Hallo Britta"
-	message_memory: .asciiz "free mem: "
+.include "messages.asm"
 
 ;----- jump table for bios routines -----
 ; check if we have enough memory for the jump tables

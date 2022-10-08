@@ -1,0 +1,8 @@
+	message_w6502sbc: .asciiz "W6502SBC"
+	message_welcome: .asciiz "Welcome"
+	message_ramtas: .asciiz "RAMTAS"
+	message_srvinit: .asciiz "SRV INIT"
+	message_ready: .asciiz "ready"
+	message_showdec: .asciiz "show dec"
+	message_britta: .asciiz "Hallo Britta"
+	message_memory: .asciiz "free mem: "
