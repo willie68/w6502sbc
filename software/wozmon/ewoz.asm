@@ -201,6 +201,8 @@ echo:       pha             ;*Save A
 @wait:      lda ACIA_STATUS ;*Load status register for ACIA
             and #$10        ;*Mask bit 4.
             beq @wait       ;*ACIA not done yet, wait.
+            lda #$01
+            jsr do_delay
             pla             ;*Restore A
             rts             ;*Done, over and out...
 
@@ -332,6 +334,19 @@ getchar:    lda ACIA_STATUS ;See if we got an incoming char
             beq getchar     ;wait for character
             lda ACIA_RX     ;Load char
             rts
+;------------------------------------------------------------------------------
+; The count of outloops will be used from A.
+; for 1MHz we had a cycle with 1us. if A = 1 we had 20 + 20 clks, which means a minimum of 200us,
+; but the reality is somtime different. To get the 200us on my sbc there must be 32 inner loops.
+; $01 = 200uS, $02= 360us, $04= 700uS, $08= 1,4ms, $10= 2,7ms, $20= 5,3ms, $40= 10,6ms, $80= 21,3ms, $FF=42,3ms
+do_delay:	phy			; 3 clk
+@outer:  	ldy  #$20	; 2 clk, this gives an inner loop of 5 cycles x 20 =  100uS        
+@inner:     dey			; 2 clk
+            bne @inner	; 2 + 1 clk (for the jump back)
+            sbc #$01	; 2 clk
+            bne @outer	; 2 + 1 clk exit when COUNTER is less than 0
+            ply			; 4 clk
+            rts			; 6 clk 
 
 msg1:  .asciiz "Welcome to EWOZ 1.0."
 msg2:  .asciiz "start Intel Hex code Transfer."
@@ -340,10 +355,10 @@ msg4:  .asciiz "Intel Hex Imported with checksum error."
 
 do_nmi: ; nmi service routine 
 do_irq: ; irq service routine
-	rti
+            rti
 
 ;----- cpu vectors -----
-	.org  $FFFA
-	.word   do_nmi
-	.word   do_reset
-	.word   do_irq
+ .org  $FFFA
+ .word   do_nmi
+ .word   do_reset
+ .word   do_irq
