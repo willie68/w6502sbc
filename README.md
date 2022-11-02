@@ -1,7 +1,7 @@
 # w6502sbc
 willies 6502 single board computer
 
-![w6502sbc](images/pcb_V1_4-bit_LCD.jpg)
+![w6502sbc](images/2022_11_01.jpg)
 
 a 6502 sbc with the option to be used with a backplane as a module.
 
