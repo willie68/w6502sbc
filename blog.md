@@ -759,7 +759,7 @@ Da noch kein RAM im Rechner ist, kann man natürlich nicht mit Subroutinen arbei
 
 Und schon wieder will das Breadboard nicht. Diesmal der Pin D7 an der CPU. Da mittlerweile aber die Platinen der V1 gekommen sind, habe ich die mal schnell bestückt. 
 
-![pcb_v1](./images/pcb_v1.jpg)
+<img src="./images/pcb_v1.jpg" alt="pcb_v1" style="zoom:25%;" />
 
 Ich musste allerdings noch 2 Probleme in der Platine beseitigen. Einmal fehlte in der Stromversorgung ein Kontakt, da hat das Layoutprogramm einfach eine Verbindung nicht erstellt. Optisch da, aber tatsächlich nicht verbunden. Aber keine echtes Problem. Einfach mit einem kleinen Drahtstück an der LED überbrückt. Und einmal fehlte dem Flashsockel noch eine +5V Verbindung, damit man auch eine 8KB EEPROM einsetzen kann. Auch hier ein kleines Stückchen Draht, fertig.
 
@@ -775,7 +775,7 @@ Bei dem bisherigen Versuchen habe ich das LCD immer mit 8-Bit angesprochen. D.h.
 
 Nun geht's an die Software und das ist gar nicht mal so einfach. Zwar gibt es viele Beispiele auch für den 6502 mit 6522, aber von den Beispielen habe ich keines zum Laufen bekommen. Also musste ich selbst forschen. Zum Umschalten des Displays in den 4-Bit Modus muss ein gewisse Muster eingehalten werden. Und nebenbei machte dann auch das Display bei erneutem Reset Druck plötzlich mucken. Also muss das Display auch per Software einen Reset ausführen. Ließt man dazu das Kapitel im Datenblatt, erhält man eine genaue Reihenfolge wie welche Befehle mit welchen Zeitabständen erfolgen müssen. Dazu braucht man dann auch eine zuverlässige Delay Routine. Gleichzeitig habe ich nun auch ein paar zusätzliche Methoden zur Ausgabe ins ROM integriert. 
 
-![pcb_v1](./images/pcb_v1_4-bit_LCD.jpg)
+<img src="./images/pcb_v1_4-bit_LCD.jpg" alt="pcb_v1" style="zoom:25%;" />
 
 Nebenbei habe ich auch den ROM Sockel mit einem ZIF Aufsatz versehen. Das macht das Programmieren erheblich einfacher und schont die Beine der ICs und den Sockel. Evtl. muss ich auch mal über eine In-Circut-Programmiermöglichkeit nachdenken. Achja, die zusätzlichen Kabel, die vom Display nach recht weggehen, hängen an meinem Logic Analyser. Der hat mir dismal bei der Analyse und Programmierung sehr gute Dienste geleistet.
 
@@ -995,15 +995,48 @@ do_delay:
 
 Ich habe mit einigen verschiedenen R65C51 Varianten aus China experimentiert. Alle 5 Chips unterscheiden sich etwas in ihrem Aussehen. 3 PlasticDip einmal Keramik, 3 mit Rockwell-Logo einmal ohne… Und in meiner Platine verhält sich jeder Chip anders. Der Keramikchip startet den Oszillator nicht, einer gibt immer einen Interrupt (Bit 7) auch wenn kein anderes Bit gesetzt ist. Einer will immer 5 Bit seriell verwenden, egal was ich in das Steuerregister eintrage, einer gibt immer %00000000 aus und der letzte hat eine andere Baudrate. Ich gebe auf, den R6551 für meinen SBC verwenden zu wollen und habe ein Paar max3100 bestellt… Diese werden allerdings mit SPI angesprochen. In der Zwischenzeit konnte ich auch einen WDC W65C51 ergattern, allerdings nur in PLCC28. Und dafür einen vollständigen Adapter zu besorgen ist auch nicht einfach. Also habe ich mir einen selber designed und gebaut.
 
-![pcb_v1](./images/plcc28_dil28_adapter.jpg)
+<img src="./images/plcc28_dil28_adapter.jpg" alt="pcb_v1" style="zoom:25%;" />
 
-<img src="./images/plcc28_dil28_adapter_side.jpg" alt="pcb_v1" style="zoom:50%;" />
+<img src="./images/plcc28_dil28_adapter_side.jpg" alt="pcb_v1" style="zoom: 25%;" />
 
-MEin SBC sieht also jetzt so aus
+Mein SBC sieht also jetzt so aus
 
-![pcb_v1](./images/wdc65C51_plcc28.jpg)
+<img src="./images/wdc65C51_plcc28.jpg" alt="pcb_v1" style="zoom:25%;" />
+
+# W65C51 die 2.
+
+Nachdem das Projekt aus privaten Gründen etwas geruht hat, habe ich in den letzten paar Tagen weiter gemacht. 
+
+## Senden
+
+Zunächst ging es darum den W65C51 dazu zu bewegen, Daten aus die Schnittstelle auszuspucken. Als Terminal Programm verwende ich HTerm. Ich hab mit einem einfachen Sendeprogramm angefangen. Einfach nur einen String senden. Übernpmmen habe ich dabei die Routine von dem LCD. Aber irgendwie wollte es nicht so richtig funktionieren. Ich habe 2 verschiedene Adapter ausprobiert. Mit HTerm keine Reaktion. Mit meinem anderen Programm, CoolTerm, und der Einstellung HArdwareflow ging es auf anhieb. Also muss da was mit den Einstellungen vom HTerm nicht stimmen. Nach langer Suche bin ich auf die Lösung gestossen (worden) In HTerm muss ich DTR einschalten (das sind die Buttons im Sendebereich). Erst wenn DTR aktiv ist, sendet auch der 6551. Und schon funktionierte es. Der WDC65C51 hat einen unschönen Bug: das Sende Flag wird nicht mehr zurück gesetzt, d.h. der 6551 meldet immer, daß er etwas senden kann, auch wenn er gerade noch beschäftigt ist. Um den 6551 nicht zu überfahren muss man also nach dem Senden eine gewisse Zeit warten, bis man das nächste Zeichen senden kann. Unschön aber nicht weiter tragisch. Ich habe in der seriell.asm auch gleich eine automatische Berechnung der Delayzeit auf Basis der Taktfrequenz eingebaut. Gilt aber nur für feste Clock Frequenzen. Die automatische Umschaltung ist noch nicht implementiert.
+
+## Empfangen
+
+Ich habe dann das Bios etwas um organisiert. Das LCD ist für System- und Debugmeldungen zuständig, während der serielle Schnittstelle als Nabelschur für die weiteren Funktionen dienen soll. Aber der Empfang wollte auch nicht. Keine Kombination. Im 6502.org Forum kam als Hinweis mal die DCDB Leitung zu kontrollieren, evtl. empfänge der 6551 nur wenn diese aktiv (also 0) ist. 
+Laut Datenblatt sollte das zwar nicht so sein, aber ein zusätzliches Kabel schadet ja auch nicht. Also am Full Serial Anschluss (K6) die DCB Leitung nach GND gejumpert. Nanu, der SBC bleibt stumm. Kurzschluss. Platine kontrolliert und siehe da, Leitung 15 und 16 am 6551 sind vertauscht. DCDB und VCC. Also musste ich sowohl die Platine, wie auch im PCB Layout und auch gleich in der Bibliothek den Fehler korrigieren. Danach ging es auf Anhieb.
+
+<img src="./images/pcb_6551_receive_bug.jpg" alt="pcb_v1" style="zoom:25%;" />
+
+## Main Menu
+
+Nachdem auch das Problem aus dem Weg geräumt war, habe ich nun die 1. Version des Bios Menüs gebaut. 
+
+Nach dem Start kommt nun folgende Meldungen im Terminal:
+
+```
+W6502SBC Welcome
+W6502SBC ready
+1: Mon 2: Basic
+```
+
+Hier kann man nun zwischen dem Monitor und dem (noch nicht implementierten Basic) wählen.
+
+Der Monitor ist eine angepasste Version vom WOZMON in der Version von fsafstrom (http://www.brielcomputers.com/phpBB3/viewtopic.php?f=9&t=197) mit Intel Hex Unterstützung. 
 
 
+
+<img src="./images/2022_11_01.jpg" alt="pcb_v1" style="zoom: 25%;" />
 
 # Terminal
 
