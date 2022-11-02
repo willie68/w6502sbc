@@ -370,7 +370,7 @@ do_irq: ; irq service routine
             rti
 
 ;----- cpu vectors -----
- .org  $FFFA
- .word   do_nmi
- .word   do_reset
- .word   do_irq
+.org  $FFFA
+.word   do_nmi
+.word   do_reset
+.word   do_irq
