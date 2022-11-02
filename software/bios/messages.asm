@@ -6,3 +6,7 @@
 	message_showdec: .asciiz "show dec"
 	message_britta: .asciiz "Hallo Britta"
 	message_memory: .asciiz "free mem: "
+	message_menu: .asciiz "1: Mon 2: Basic"
+	message_monitor: .asciiz "extended monitor"
+	message_basic: .asciiz "Basic"
+	message_unknown: .asciiz "unknown"

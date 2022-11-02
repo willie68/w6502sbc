@@ -3,26 +3,6 @@ LCD_E  .equ %00010000
 LCD_RW .equ %01000000
 LCD_RS .equ %00100000
 
-; ---- Macros for lc display
-.macro LcdOutput(col)
-	lda #$01
-	ldx #col
-	jsr lcd_goto 
-
-	lda #col
-	jsr do_nhexout
-.endmacro
-
-.macro LcdMsgOut(msg)
-	lda #>message_w6502sbc
-	ldx #<message_w6502sbc
-	jsr lcd_strout 
-	lda #" "
-	jsr lcd_chrout
-	lda #>msg
-	ldx #<msg
-	jsr lcd_strout 
-.endmacro
 ; ---- Display routines ----
 do_scinit: 		; initialise LC-Display on port B
 	; D4..D7 on Port pins PB0..3
@@ -166,26 +146,22 @@ lcd_clear: ; clear entire LCD
 	pla
 	rts
 
-lcd_strout: ; output string, address of text hi: A, lo: X
+do_strout: ; output string, address of text hi: A, lo: X
 	phy
-	phx
-	pha
     stx TEMP_VEC
 	sta TEMP_VEC+1
   	ldy #0
-@lcdstrprint:
+@strprint:
   	lda (TEMP_VEC),y
-  	beq @lcdstrreturn
-  	jsr lcd_chrout
+  	beq @strreturn
+  	jsr do_chrout
   	iny
-  	jmp @lcdstrprint
-@lcdstrreturn:
-	pla
-	plx
+  	jmp @strprint
+@strreturn:
 	ply
 	rts
 
-lcd_chrout: ; output a single char to LCD, char in A
+do_chrout: ; output a single char to LCD, char in A
 	jsr lcd_wait
 	pha
 	; sending high nibble
@@ -206,7 +182,7 @@ lcd_chrout: ; output a single char to LCD, char in A
 	sta VIA_ORB
 	rts
 
-lcd_numout: ; output a number in decimal, A: hi byte, X lo byte
+do_numout:  ; output a number in decimal, A: hi byte, X lo byte
             ; Output 16-bit unsigned integer to stdout
             ; by Michael T. Barry 2017.07.07. Free to
             ; copy, use and modify, but without warranty
@@ -236,33 +212,33 @@ lcd_numout: ; output a number in decimal, A: hi byte, X lo byte
     bne @iout2 ; } until quotient is 0
     pla
 @iout5:
-    jsr lcd_chrout ; print digits in descending
+    jsr do_chrout ; print digits in descending
     pla ; order until delimiter is
     bne @iout5 ; encountered
     rts 
-lcd_hexout: ; output a number in hex with leading $, A: hi byte, X lo byte 
+do_hexout: ; output a number in hex with leading $, A: hi byte, X lo byte 
     pha
     pha
     lda #"$"
-    jsr lcd_chrout
+    jsr do_chrout
     pla             ; output hi byte
-    jsr lcd_bhexout
+    jsr do_bhexout
     txa             ; output hi byte
-    jsr lcd_bhexout
+    jsr do_bhexout
     pla
     rts
-lcd_bhexout:
+do_bhexout:
     pha             ; output hi nibble
     lsr
 	lsr
 	lsr
 	lsr
-	jsr lcd_nhexout
+	jsr do_nhexout
     pla             ; output lo nibble of hi byte
-	jsr lcd_nhexout
+	jsr do_nhexout
     rts
 
-lcd_nhexout: ; output the lower nibble as hex
+do_nhexout: ; output the lower nibble as hex
     pha             ; output hi nibble
     and #$0F
     ora #$30        ; add "0"
@@ -270,6 +246,6 @@ lcd_nhexout: ; output the lower nibble as hex
 	bmi @bh2
 	adc #$06
 @bh2:
-    jsr lcd_chrout
+    jsr do_chrout
     pla
     rts

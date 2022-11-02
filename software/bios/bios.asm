@@ -8,6 +8,8 @@
 .include "macros.asm"
 
 ;----- constant definitions -----
+CLOCK .equ 1000000
+
 ;constants for board specifig
 JIFFY_VIA_TIMER_LOAD .equ 20000   ; this is the value for 1MHZ / 50 ticks per second
 
@@ -28,7 +30,9 @@ RAMSTART .equ $0400
 
 ;----- bios start code -----
 do_reset: ; bios reset routine 
-    ldx #$ff ; set the stack pointer 
+    cld             ;Clear decimal arithmetic mode.
+    cli
+	ldx #$ff ; set the stack pointer 
    	txs 
 
 	; reset jiffy clock
@@ -40,88 +44,54 @@ do_reset: ; bios reset routine
 	jsr do_srvinit 	; cleanup the interrupt registers
 	jsr do_ramtas 	; initialise ram
 	jsr do_ioinit  	; initialise VIA
-	jsr do_serinit  	; initialise VIA
+	jsr do_serinit	; initialise acia
 	jsr do_scinit 	; initialise display
 
 	;jsr lcd_clear
-	msg_out(message_welcome)
+	LcdMsgOut(message_welcome)
+	SerMsgOut(message_welcome)
 
 	jsr lcd_clear
-	msg_out(message_ready)
+	LcdMsgOut(message_ready)
 
 	stz COUNTER
 ;----- main -----
-.macro output(col)
-
-	lda #$01
-	ldx #col
-	jsr lcd_goto 
-
-	lda #col
-	jsr do_nhexout
-.endmacro
-/*
-	lda #>message_w6502sbc
-	ldx #<message_w6502sbc
-	jsr do_serstrout
-	lda #" "
-	jsr do_serout
-	lda #>message_ready
-	ldx #<message_ready
-	jsr do_serstrout
-*/
-
 	jsr lcd_secondrow
 	lda #>message_memory
 	ldx #<message_memory
-	jsr do_strout 
+	jsr lcd_strout 
 	lda RAMTOP+1
 	adc #$01
 	sbc #>RAMSTART
 	ldx #$0
-	jsr do_numout 
-
-	lda #>message_w6502sbc
-	ldx #<message_w6502sbc
-	jsr do_serstrout2
-
-main_loop:
-	jsr lcd_clear
-	msg_out(message_ready)
-	jsr lcd_secondrow
-	lda ACIA_STATUS
-	jsr do_bhexout
-
-;@SEROUTL1:
-;    lda  ACIA_STATUS    ;Read ACIA status register
-;    and  #%00010000     ;Isolate transmit data register status bit
-;    beq  @SEROUTL1      ;LOOP back to COUTL IF transmit data register is full
-
-	lda #"A"
-	jsr do_serout
-
-;	lda #$FF
-;	jsr do_delay
-
-	jmp main_loop
-
-do_serstrout2: ; output string, address of text hi: A, lo: X
-	phy
-    stx TEMP_VEC
-	sta TEMP_VEC+1
-  	ldy #0
-@serprint:
-  	lda (TEMP_VEC),y
-  	beq @serreturn
-	sta ACIA_TX
-	lda #$00
+	jsr lcd_numout 
+	lda #$ff
 	jsr do_delay
 
-  	iny
-  	jmp @serprint
-@serreturn:
-	ply
-	rts
+main_loop:
+    ; output menu
+	SerMsgOut(message_ready)
+	SerStrOut(message_menu)
+	jsr ser_crout
+	; reading input
+	jsr ser_chrin
+	; whats next?
+	cmp #"1"
+	beq start_monitor
+	cmp #"2"
+	beq start_basic
+
+	SerStrOut(message_unknown)
+	jsr ser_crout
+	jmp main_loop
+
+start_monitor:
+	jsr ewoz
+	jmp main_loop
+start_basic:
+	SerStrOut(message_basic)
+	jsr ser_crout
+	jmp main_loop
 
 do_ioinit: ; initialise the timer for the jiffy clock
 	lda #%01111111
@@ -263,6 +233,7 @@ jiend:
 
 .include "seriell.asm"
 .include "lcd.asm"
+.include "ewoz.asm"
 
 ;------------------------------------------------------------------------------
 ; The count of outloops will be used from A.
@@ -271,13 +242,13 @@ jiend:
 ; $01 = 200uS, $02= 360us, $04= 700uS, $08= 1,4ms, $10= 2,7ms, $20= 5,3ms, $40= 10,6ms, $80= 21,3ms, $FF=42,3ms
 do_delay:
 	phy			; 3 clk
-@outer:    
+@dlyouter:    
 	ldy  #$20	; 2 clk, this gives an inner loop of 5 cycles x 20 =  100uS        
-@inner:
+@dlyinner:
     dey			; 2 clk
-	bne @inner	; 2 + 1 clk (for the jump back)
+	bne @dlyinner	; 2 + 1 clk (for the jump back)
     sbc #$01	; 2 clk
-    bne @outer	; 2 + 1 clk exit when COUNTER is less than 0
+    bne @dlyouter	; 2 + 1 clk exit when COUNTER is less than 0
     ply			; 4 clk
     rts			; 6 clk 
 
@@ -359,16 +330,16 @@ do_setnmisrv: ; setting an external irq routine for checking, A hi, X lo
 ;jump_table
 STROUT:
 	.org $FF00 ; STROUT output string, A = high, X = low
-	jmp do_strout
+	jmp lcd_strout
 HEXOUT:
 	.org $FF03 ; HEXOUT output a 16-bit value as hex with leading $, A = high, X = low
-	jmp do_hexout
+	jmp lcd_hexout
 BHEXOUT:
 	.org $FF06 ; BHEXOUT output a 8-bit value as hex without leading, A = value
-	jmp do_bhexout
+	jmp lcd_bhexout
 NUMOUT:
 	.org $FF09 ; NUMOUT output a 16-bit value as decimal, A = high, X = low
-	jmp do_numout
+	jmp lcd_numout
 LCDCLEAR:
 	.org $FF0C ; LCDCLEAR Clear display
 	jmp lcd_clear
@@ -404,7 +375,7 @@ ISREND:
 	jmp isr_end 
 CHROUT:
 	.org $FFD2 ; CHROUT Output an character
-	jmp do_chrout
+	jmp lcd_chrout
 SETTIM:
 	.org $FFDB ; SETTIM Set the Jiffy Clock
 	jmp do_settim

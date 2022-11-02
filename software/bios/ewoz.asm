@@ -1,5 +1,6 @@
 ;EWoz 1.0
 ;by fsafstrom » Mar Wed 14, 2007 12:23 pm
+;modified for W6502SBC by w.klaas (github.com/willie68/w6502sbc)
 ;http://www.brielcomputers.com/phpBB3/viewtopic.php?f=9&t=197#p888
 ;via http://jefftranter.blogspot.co.uk/2012/05/woz-mon.html
 ;
@@ -26,14 +27,9 @@
 ; EWOZ Extended Woz Monitor.
 ; Just a few mods to the original monitor.
 
-.format "bin"
-.target "65C02"
-.include "io.asm" 
+;----- constant definitions -----
 
 IN          .equ $0200          ;*Input buffer
-HNIBBLE     .equ $21
-LNIBBLE     .equ $22
-TEMPBYTE    .equ $23
 XAML        .equ $24            ;*Index pointers
 XAMH        .equ $25
 STL         .equ $26
@@ -44,36 +40,11 @@ YSAV        .equ $2A
 MODE        .equ $2B
 MSGL        .equ $2C
 MSGH        .equ $2D
-COUNTER     .equ $2E
 CRC         .equ $2F
 CRCCHECK    .equ $30
-TEMP_VEC    .equ $32 ; store a temporary vector, like the address to the string to output, $32 low, $33 hi
 
-
-.org $E000
-
-do_reset:   cld             ;Clear decimal arithmetic mode.
-            cli
-            ldx #$ff ; set the stack pointer 
-           	txs 
-            jsr do_scinit ; initialise LCD
-            lda #$00
-            sta ACIA_STATUS
-            lda #%00001011			; no parity, no echo, transmit irq disabled, no receiver irq, DTR High
-            sta ACIA_COMMAND
-            lda #%00011110			; 8-bit, 1 Stop bit, Baudrate, 9600 Baud
-            sta ACIA_CONTROL
-            ;lda #$1F        ;* Init ACIA to 19200 Baud.
-            ;sta ACIA_CONTROL
-            ;lda #$0B        ;* No Parity.
-            ;sta ACIA_COMMAND
-            lda #$0D
-            jsr echo        ;* New line.
-            ldx #<msg1
-            lda #>msg1
-            jsr shwmsg      ;* Show Welcome.
-            lda #$0D
-            jsr echo        ;* New line.
+ewoz:      	SerStrOut(message_monitor)
+        	jsr ser_crout
 softreset:  lda #$9B        ;* Auto escape.
 notcr:      cmp #$88        ;"<-"? * Note this was chaged to $88 which is the back space key.
             beq backspace   ;Yes.
@@ -92,10 +63,7 @@ backspace:  dey             ;Backup text index.
             jsr echo
             lda #$88        ;*backspace again to get to correct pos.
             jsr echo
-nextchar:   lda ACIA_STATUS ;*See if we got an incoming char
-            and #$08        ;*Test bit 3
-            beq nextchar    ;*wait for character
-            lda ACIA_RX     ;*Load char
+nextchar:   jsr ser_chrin   ; load next char
             cmp #$60        ;*Is it Lower case
             bmi convert     ;*Nope, just convert it
             and #$5F        ;*If lower case, convert to Upper case
@@ -122,6 +90,10 @@ nextitem:   lda IN,y        ;Get character.
             beq run         ;Yes, run user program.
             cmp #$CC        ;* "L"?
             beq loadint     ;* Yes, Load Intel Code.
+            cmp #$CC        ;* "L"?
+            beq loadint     ;* Yes, Load Intel Code.
+            cmp #$C5        ;* "E"?
+            beq exit     ;* Yes, exit to main loop.
             stx L           ;$00->L.
             stx H           ; and H.
             sty YSAV        ;Save Y for comparison.
@@ -151,6 +123,8 @@ nothex:     cpy YSAV        ;Check if L, H empty (no hex digits).
 run:        jsr actrun      ;* jsr to the Address we want to run.
             jmp softreset   ;* When returned for the program, reset EWOZ.
 actrun:     jmp (XAML)      ;run at current XAM index.
+
+exit:       rts
 
 loadint:    jsr loadintel   ;* Load the Intel code.
             jmp softreset   ;* When returned from the program, reset EWOZ.
@@ -207,28 +181,14 @@ prhex:      and #$0F        ;Mask LSD for hex print.
             cmp #$BA        ;digit?
             bcc echo        ;Yes, output it.
             adc #$06        ;Add offset for letter.
-echo:       pha             ;*Save A
-            and #$7F        ;*Change to "standard ASCII"
-            pha
-@wait:      lda ACIA_STATUS ;*Load status register for ACIA
-            and #$10        ;*Mask bit 4.
-            beq @wait       ;*ACIA not done yet, wait.
-            pla
-            sta ACIA_TX     ;*Send it.
-            lda #$01
-            jsr do_delay
-            pla             ;*Restore A
-            rts             ;*Done, over and out...
+echo:       pha
+            and #$7F
+            jsr ser_chrout
+            pla 
+            rts
 
-shwmsg:     jsr do_strout     
-seriellmsg:            
-            ldy #$0
-@print:     lda (MSGL),y
-            beq @DONE
-            jsr echo
-            iny 
-            bne @print
-@DONE:      rts 
+shwmsg:     jsr ser_strout
+            rts 
 
 
 ; Load an program in Intel Hex Format.
@@ -241,7 +201,7 @@ loadintel:  lda #$0D
             jsr echo        ;New line.
             ldy #$00
             sty CRCCHECK   ;If CRCCHECK=0, all is good.
-intelline:  jsr getchar    ;Get char
+intelline:  jsr ser_chrin  ;Get char
             sta IN,y       ;Store it
             iny            ;Next
             cmp   #$1B     ;escape ?
@@ -339,38 +299,7 @@ donesecond: and #$0F
             iny
             rts
 
-getchar:    lda ACIA_STATUS ;See if we got an incoming char
-            and #$08        ;Test bit 3
-            beq getchar     ;wait for character
-            lda ACIA_RX     ;Load char
-            rts
-;------------------------------------------------------------------------------
-; The count of outloops will be used from A.
-; for 1MHz we had a cycle with 1us. if A = 1 we had 20 + 20 clks, which means a minimum of 200us,
-; but the reality is somtime different. To get the 200us on my sbc there must be 32 inner loops.
-; $01 = 200uS, $02= 360us, $04= 700uS, $08= 1,4ms, $10= 2,7ms, $20= 5,3ms, $40= 10,6ms, $80= 21,3ms, $FF=42,3ms
-do_delay:	phy			; 3 clk
-@outer:  	ldy  #$20	; 2 clk, this gives an inner loop of 5 cycles x 20 =  100uS        
-@inner:     dey			; 2 clk
-            bne @inner	; 2 + 1 clk (for the jump back)
-            sbc #$01	; 2 clk
-            bne @outer	; 2 + 1 clk exit when COUNTER is less than 0
-            ply			; 4 clk
-            rts			; 6 clk 
-
-.include "lcd.asm"
-
 msg1:  .asciiz "Welcome to EWOZ 1.0."
 msg2:  .asciiz "start Intel Hex code Transfer."
 msg3:  .asciiz "Intel Hex Imported OK."
 msg4:  .asciiz "Intel Hex Imported with checksum error."
-
-do_nmi: ; nmi service routine 
-do_irq: ; irq service routine
-            rti
-
-;----- cpu vectors -----
- .org  $FFFA
- .word   do_nmi
- .word   do_reset
- .word   do_irq
